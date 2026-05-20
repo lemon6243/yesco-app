@@ -1,0 +1,269 @@
+import { useEffect, useState, useMemo } from "react";
+import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import { getMainCenter, getColorByCenter } from "../utils/colorPalette";
+import useAppStore, { ZONE_COLORS } from "../store/useAppStore";
+import { useAdjacencyMap } from "../utils/dataLoader";
+import { checkAdjacency } from "../utils/validator";
+
+const SEOUL_CENTER = [37.5665, 126.978];
+const DEFAULT_ZOOM = 11;
+const LABEL_MIN_ZOOM = 12;
+
+function ZoomWatcher({ onZoomChange }) {
+  const map = useMap();
+  useEffect(() => {
+    const handler = () => onZoomChange(map.getZoom());
+    map.on("zoomend", handler);
+    onZoomChange(map.getZoom());
+    return () => map.off("zoomend", handler);
+  }, [map, onZoomChange]);
+  return null;
+}
+
+function getPolygonCenter(geometry) {
+  let coords = [];
+  if (geometry.type === "Polygon") {
+    coords = geometry.coordinates[0];
+  } else if (geometry.type === "MultiPolygon") {
+    let maxLen = 0;
+    geometry.coordinates.forEach((poly) => {
+      if (poly[0].length > maxLen) {
+        maxLen = poly[0].length;
+        coords = poly[0];
+      }
+    });
+  }
+  if (!coords.length) return null;
+  let sx = 0, sy = 0;
+  coords.forEach(([x, y]) => {
+    sx += x;
+    sy += y;
+  });
+  return [sy / coords.length, sx / coords.length];
+}
+
+function formatLabel(props, labelType) {
+  const name = props.행정동 ?? "";
+  const total = props.합계 ?? 0;
+  if (labelType === "name") return name;
+  if (labelType === "total") return total.toLocaleString();
+  return `${name}<br/><span style="font-weight:normal;color:#444">${total.toLocaleString()}</span>`;
+}
+
+export default function MapView({ onDataLoaded }) {
+  const [geoData, setGeoData] = useState(null);
+  const [error, setError] = useState(null);
+  const [currentZoom, setCurrentZoom] = useState(DEFAULT_ZOOM);
+
+  const viewMode = useAppStore((s) => s.viewMode);
+  const dongAssignments = useAppStore((s) => s.dongAssignments);
+  const zoneCount = useAppStore((s) => s.zoneCount);
+  const selectedZone = useAppStore((s) => s.selectedZone);
+  const showLabels = useAppStore((s) => s.showLabels);
+  const labelType = useAppStore((s) => s.labelType);
+
+  const adjacencyMap = useAdjacencyMap();
+
+  const isolatedDongs = useMemo(() => {
+    if (!Object.keys(adjacencyMap).length) return new Set();
+    const issues = checkAdjacency(dongAssignments, adjacencyMap, zoneCount);
+    const set = new Set();
+    Object.values(issues).forEach((iss) =>
+      iss.isolatedDongs.forEach((d) => set.add(d))
+    );
+    return set;
+  }, [dongAssignments, adjacencyMap, zoneCount]);
+
+  useEffect(() => {
+    fetch("/data/yesco_dongs.geojson")
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        setGeoData(data);
+        if (onDataLoaded) onDataLoaded(data);
+      })
+      .catch((err) => setError(err.message));
+  }, [onDataLoaded]);
+
+  const geoKey = useMemo(
+    () =>
+      `${viewMode}-${selectedZone}-${JSON.stringify(dongAssignments)}-${isolatedDongs.size}`,
+    [viewMode, selectedZone, dongAssignments, isolatedDongs]
+  );
+
+  const styleFn = (feature) => {
+    const p = feature.properties;
+    const name = p.행정동;
+    const assignedZone = dongAssignments[name];
+    let fillColor;
+    let fillOpacity;
+
+    if (viewMode === "center") {
+      fillColor = getColorByCenter(getMainCenter(p));
+      fillOpacity = 0.55;
+    } else if (viewMode === "zone") {
+      fillColor = assignedZone
+        ? ZONE_COLORS[(assignedZone - 1) % ZONE_COLORS.length]
+        : "#e5e7eb";
+      fillOpacity = assignedZone ? 0.65 : 0.25;
+    } else {
+      // hybrid
+      if (assignedZone) {
+        fillColor = ZONE_COLORS[(assignedZone - 1) % ZONE_COLORS.length];
+        fillOpacity = 0.7;
+      } else {
+        fillColor = getColorByCenter(getMainCenter(p));
+        fillOpacity = 0.3;
+      }
+    }
+
+    const isolated = isolatedDongs.has(name);
+    const isSelectedZone = assignedZone && assignedZone === selectedZone;
+
+    return {
+      fillColor,
+      weight: isolated ? 3 : isSelectedZone ? 3 : 1,
+      opacity: 1,
+      color: isolated ? "#dc2626" : isSelectedZone ? "#000" : "#333",
+      dashArray: isolated ? "4,3" : "",
+      fillOpacity: isSelectedZone
+        ? Math.min(fillOpacity + 0.15, 0.9)
+        : fillOpacity,
+    };
+  };
+
+  const onEachFeature = (feature, layer) => {
+    const p = feature.properties;
+    const name = p.행정동;
+    layer.bindTooltip(name ?? "", { sticky: true });
+
+    layer.on({
+      click: (e) => {
+        const state = useAppStore.getState();
+        const z = state.selectedZone;
+        if (e.originalEvent.shiftKey) state.clearDong(name);
+        else if (z) state.assignDong(name, z);
+      },
+      mouseover: (e) => {
+        e.target.setStyle({ weight: 4, color: "#000" });
+      },
+      mouseout: (e) => {
+        const isolated = isolatedDongs.has(name);
+        const assignedZone = dongAssignments[name];
+        const isSelectedZone = assignedZone && assignedZone === selectedZone;
+        e.target.setStyle({
+          weight: isolated ? 3 : isSelectedZone ? 3 : 1,
+          color: isolated ? "#dc2626" : isSelectedZone ? "#000" : "#333",
+        });
+      },
+    });
+
+    const isolated = isolatedDongs.has(name);
+    const assignedZone = dongAssignments[name];
+    const html = `
+      <div style="font-size:13px;line-height:1.6">
+        <b>${name ?? "-"}</b>${
+      isolated ? ' <span style="color:#dc2626">⚠ 고립</span>' : ""
+    }<br/>
+        ${assignedZone ? `<span style="color:#0066cc"><b>권역 ${assignedZone}에 할당됨</b></span><br/>` : ""}
+        운영센터: ${p.운영센터 ?? p.주센터번호 ?? "-"}<br/>
+        단독: ${(p.단독 ?? 0).toLocaleString()}<br/>
+        공동: ${(p.공동 ?? 0).toLocaleString()}<br/>
+        영업: ${(p.영업 ?? 0).toLocaleString()}<br/>
+        <b>합계: ${(p.합계 ?? 0).toLocaleString()}</b><br/>
+        도심권: ${p.is_downtown ? "✅" : "—"}<br/>
+        <span style="color:#666">클릭: 권역 할당 / Shift+클릭: 해제</span>
+      </div>
+    `;
+    layer.bindPopup(html);
+  };
+
+  const labelData = useMemo(() => {
+    if (!geoData) return [];
+    return geoData.features
+      .map((f) => {
+        const center = getPolygonCenter(f.geometry);
+        if (!center) return null;
+        return {
+          name: f.properties.행정동,
+          center,
+          html: formatLabel(f.properties, labelType),
+        };
+      })
+      .filter(Boolean);
+  }, [geoData, labelType]);
+
+  const showLabelsNow = showLabels && currentZoom >= LABEL_MIN_ZOOM;
+
+  if (error) {
+    return <div className="p-4 text-red-600">GeoJSON 로드 실패: {error}</div>;
+  }
+
+  return (
+    <MapContainer
+      center={SEOUL_CENTER}
+      zoom={DEFAULT_ZOOM}
+      style={{ width: "100%", height: "100%" }}
+    >
+      <TileLayer
+        attribution="&copy; OpenStreetMap"
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      <ZoomWatcher onZoomChange={setCurrentZoom} />
+      {geoData && (
+        <GeoJSON
+          key={geoKey}
+          data={geoData}
+          style={styleFn}
+          onEachFeature={onEachFeature}
+        />
+      )}
+      {showLabelsNow &&
+        labelData.map((item, i) => (
+          <LabelMarker key={item.name + i} item={item} />
+        ))}
+      {showLabels && currentZoom < LABEL_MIN_ZOOM && (
+        <div
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs px-3 py-1 rounded"
+          style={{ zIndex: 1000 }}
+        >
+          🔍 줌을 더 확대하면 라벨이 표시됩니다 (현재 {currentZoom} / 필요{" "}
+          {LABEL_MIN_ZOOM})
+        </div>
+      )}
+    </MapContainer>
+  );
+}
+
+function LabelMarker({ item }) {
+  const map = useMap();
+  useEffect(() => {
+    const icon = L.divIcon({
+      className: "dong-label",
+      html: `<div style="
+        font-size:11px;
+        font-weight:bold;
+        color:#111;
+        text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff;
+        white-space:nowrap;
+        text-align:center;
+        pointer-events:none;
+      ">${item.html}</div>`,
+      iconSize: [80, 20],
+      iconAnchor: [40, 10],
+    });
+    const marker = L.marker(item.center, {
+      icon,
+      interactive: false,
+      keyboard: false,
+    }).addTo(map);
+    return () => {
+      map.removeLayer(marker);
+    };
+  }, [map, item]);
+  return null;
+}
