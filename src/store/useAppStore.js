@@ -43,7 +43,7 @@ const useAppStore = create((set, get) => ({
     set((state) => ({ weights: { ...state.weights, [key]: value } })),
 
   targetMin: 96240,
-  targetMax: 132000,
+  targetMax: 119760,
 
   showLabels: true,
   setShowLabels: (v) => set({ showLabels: v }),
