@@ -3,6 +3,7 @@ import { create } from "zustand";
 export const ZONE_COLORS = [
   "#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4",
   "#3b82f6", "#8b5cf6", "#ec4899", "#64748b", "#0f766e",
+  "#a16207", "#be185d", // 11번: 황토색, 12번: 진분홍 (추가)
 ];
 
 const useAppStore = create((set, get) => ({
