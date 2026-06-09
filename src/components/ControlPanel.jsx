@@ -90,7 +90,7 @@ export default function ControlPanel({ geoData }) {
       <section>
         <div className="font-semibold mb-1">권역 개수</div>
         <div className="flex gap-1">
-          {[9, 10].map((n) => (
+          {[9, 10, 11, 12].map((n) => (
             <button
               key={n}
               onClick={() => setZoneCount(n)}
