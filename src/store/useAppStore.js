@@ -26,6 +26,10 @@ const useAppStore = create((set, get) => ({
     }),
   resetAssignments: () => set({ dongAssignments: {} }),
 
+  // 자동 배정 등에서 전체 할당을 한 번에 교체할 때 사용
+  setAllAssignments: (assignments) =>
+    set({ dongAssignments: assignments ?? {} }),
+
   applyScenario: (data) =>
     set((state) => ({
       zoneCount: data.zoneCount ?? state.zoneCount,
