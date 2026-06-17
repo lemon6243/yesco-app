@@ -5,11 +5,11 @@ import useAppStore from "../store/useAppStore";
  * V2 데이터 통합 로더
  * - dongs_meters_by_grade.csv: 행정동×등급 피벗
  * - dongs_split_info.json: 분할동 메타데이터
- * - meter_weights.json: 등급별 가중치 (있으면 store 덮어쓰기)
+ * - meter_weights.json: 등급별 가중치
+ * - move_in_plan.csv: 입주예정 세대수 (V1/V2 공통)
+ * - centers_unit_times.json: 법적인원 정밀 계산용
  *
  * 반환: { metersByGrade, splitInfo, loading, error }
- *  - metersByGrade: { [행정동]: { centerCode, centerName, gu, grades: {2.5: 120, 4.0: 22500, ...}, total } }
- *  - splitInfo: dongs_split_info.json의 dongs 객체 그대로
  */
 export function useV2Data() {
   const [metersByGrade, setMetersByGrade] = useState(null);
@@ -19,6 +19,8 @@ export function useV2Data() {
 
   const setV2Loaded = useAppStore((s) => s.setV2Loaded);
   const setMeterGradeWeight = useAppStore((s) => s.setMeterGradeWeight);
+  const setMoveInData = useAppStore((s) => s.setMoveInData);
+  const setUnitTimes = useAppStore((s) => s.setUnitTimes);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,19 +36,29 @@ export function useV2Data() {
         if (!r.ok) throw new Error(`split JSON: HTTP ${r.status}`);
         return r.json();
       }),
-      // meter_weights.json은 있으면 좋고 없어도 무관
       fetch("/data/meter_weights.json")
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null),
+      // 입주예정 데이터 (선택적)
+      fetch("/data/move_in_plan.csv")
+        .then((r) => (r.ok ? r.text() : null))
+        .catch(() => null),
+      // 법적인원 정밀 계산용 단위시간 (선택적)
+      fetch("/data/centers_unit_times.json")
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
     ])
-      .then(([csvText, splitJson, weightsJson]) => {
+      .then(([csvText, splitJson, weightsJson, moveInCsv, unitTimesJson]) => {
         if (cancelled) return;
 
+        // 1) 등급별 데이터
         const parsed = parseGradeCsv(csvText);
         setMetersByGrade(parsed);
+
+        // 2) 분할동
         setSplitInfo(splitJson.dongs ?? {});
 
-        // meter_weights.json이 있고 grades 키가 있으면 store에 반영
+        // 3) 가중치 (있을 때만)
         if (weightsJson && weightsJson.grades) {
           Object.entries(weightsJson.grades).forEach(([g, w]) => {
             const gNum = parseFloat(g);
@@ -54,6 +66,21 @@ export function useV2Data() {
               setMeterGradeWeight(gNum, w);
             }
           });
+        }
+
+        // 4) 입주예정 데이터 (있을 때만)
+        if (moveInCsv) {
+          const moveInParsed = parseMoveInCsv(moveInCsv);
+          setMoveInData(moveInParsed);
+          console.log(
+            `🏗️ 입주예정 데이터 로드 완료: ${Object.keys(moveInParsed).length}개 동`
+          );
+        }
+
+        // 5) 단위시간 (있을 때만)
+        if (unitTimesJson) {
+          setUnitTimes(unitTimesJson);
+          console.log("⏱️ 단위시간 데이터 로드 완료");
         }
 
         setV2Loaded(true);
@@ -69,21 +96,20 @@ export function useV2Data() {
     return () => {
       cancelled = true;
     };
-  }, [setV2Loaded, setMeterGradeWeight]);
+  }, [
+    setV2Loaded,
+    setMeterGradeWeight,
+    setMoveInData,
+    setUnitTimes,
+  ]);
 
   return { metersByGrade, splitInfo, loading, error };
 }
 
 /**
  * dongs_meters_by_grade.csv 파싱
- * 헤더 예시: 센터코드,센터명,자치구,행정동,2.5,3.0,4.0,...,1600.0,총합계
- * 반환: { [행정동]: { centerCode, centerName, gu, grades: {...}, total } }
- *
- * 분할동(같은 행정동이 여러 센터에 등장)은 자동 합산하되,
- * primary 센터 정보는 splitInfo에서 별도로 가져오므로 여기서는 첫 등장 센터를 유지.
  */
 function parseGradeCsv(csvText) {
-  // BOM 제거
   const text = csvText.replace(/^\uFEFF/, "");
   const lines = text.split(/\r?\n/).filter((line) => line.trim());
   if (lines.length < 2) return {};
@@ -95,7 +121,6 @@ function parseGradeCsv(csvText) {
   const idxDong = header.indexOf("행정동");
   const idxTotal = header.indexOf("총합계");
 
-  // 등급 컬럼: 센터코드/센터명/자치구/행정동/총합계 외 모두 등급
   const gradeColumns = header
     .map((col, i) => {
       const num = parseFloat(col);
@@ -148,6 +173,52 @@ function parseGradeCsv(csvText) {
     if (!isNaN(totalCell)) {
       entry.total += totalCell;
     }
+  }
+
+  return result;
+}
+
+/**
+ * move_in_plan.csv 파싱
+ * 헤더: 행정동,2026,2027,2028,2029,2030,주요사업,비고
+ * 반환: { [행정동]: { 2026: n, 2027: n, ..., 2030: n, note: "..." } }
+ */
+function parseMoveInCsv(csvText) {
+  const text = csvText.replace(/^\uFEFF/, "");
+  const lines = text.split(/\r?\n/).filter((line) => line.trim());
+  if (lines.length < 2) return {};
+
+  const header = parseCsvLine(lines[0]);
+  const idxDong = header.indexOf("행정동");
+  const idxNote = header.indexOf("주요사업");
+
+  // 연도 컬럼 인덱스 (2026~2030 등 숫자 헤더)
+  const yearColumns = header
+    .map((col, i) => {
+      const num = parseInt(col, 10);
+      if (!isNaN(num) && num >= 2020 && num <= 2040) {
+        return { index: i, year: num };
+      }
+      return null;
+    })
+    .filter(Boolean);
+
+  const result = {};
+
+  for (let r = 1; r < lines.length; r++) {
+    const cells = parseCsvLine(lines[r]);
+    if (!cells.length) continue;
+
+    const dong = cells[idxDong]?.trim();
+    if (!dong) continue;
+
+    const entry = { note: idxNote >= 0 ? cells[idxNote]?.trim() ?? "" : "" };
+    yearColumns.forEach(({ index, year }) => {
+      const v = parseInt(cells[index], 10);
+      entry[year] = isNaN(v) ? 0 : v;
+    });
+
+    result[dong] = entry;
   }
 
   return result;
