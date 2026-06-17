@@ -79,7 +79,7 @@ export default function App() {
       {/* 본문 */}
       <div className="flex-1 flex overflow-hidden">
         <aside className="w-80 bg-white border-r flex flex-col overflow-y-auto">
-          <ControlPanel />
+          <ControlPanel geoData={geoData} />
           {isV2 && <ControlPanelV2 />}
         </aside>
 
