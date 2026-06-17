@@ -1,34 +1,28 @@
-// 권역별 집계 계산
-export function calculateZoneStats(features, dongAssignments, zoneCount, weights) {
+import { STAFFING_RULES } from "../store/useAppStore";
+
+/**
+ * 권역별 집계 계산 (V1)
+ *
+ * @param {Array} features - GeoJSON features
+ * @param {Object} dongAssignments - { [dongName]: zone }
+ * @param {number} zoneCount
+ * @param {Object} weights - { 단독, 공동, 영업 }
+ * @param {Object} options - { moveInData, selectedMoveInYears }
+ */
+export function calculateZoneStats(
+  features,
+  dongAssignments,
+  zoneCount,
+  weights,
+  options = {}
+) {
+  const { moveInData = {}, selectedMoveInYears = [] } = options;
+
   const stats = {};
   for (let i = 1; i <= zoneCount; i++) {
-    stats[i] = {
-      zone: i,
-      dongCount: 0,
-      dongs: [],
-      단독: 0,
-      공동: 0,
-      영업: 0,
-      합계: 0,
-      난이도점수: 0,
-      도심권개수: 0,
-      운영센터집합: new Set(),
-    };
+    stats[i] = makeEmptyZone(i);
   }
-
-  // 미할당 집계
-  const unassigned = {
-    zone: 0,
-    dongCount: 0,
-    dongs: [],
-    단독: 0,
-    공동: 0,
-    영업: 0,
-    합계: 0,
-    난이도점수: 0,
-    도심권개수: 0,
-    운영센터집합: new Set(),
-  };
+  const unassigned = makeEmptyZone(0);
 
   features.forEach((f) => {
     const p = f.properties;
@@ -37,19 +31,30 @@ export function calculateZoneStats(features, dongAssignments, zoneCount, weights
     const target = zone === 0 ? unassigned : stats[zone];
     if (!target) return;
 
+    // 입주예정 가산분 (선택된 연도까지 누적)
+    const moveIn = getMoveInSum(name, moveInData, selectedMoveInYears);
+
     target.dongCount += 1;
     target.dongs.push(name);
-    target.단독 += p.단독 ?? 0;
-    target.공동 += p.공동 ?? 0;
-    target.영업 += p.영업 ?? 0;
-    target.합계 += p.합계 ?? 0;
+
+    // 입주예정은 공동으로 분류 (아파트가 대부분이므로)
+    const 단독 = p.단독 ?? 0;
+    const 공동 = (p.공동 ?? 0) + moveIn;
+    const 영업 = p.영업 ?? 0;
+
+    target.단독 += 단독;
+    target.공동 += 공동;
+    target.영업 += 영업;
+    target.합계 += 단독 + 공동 + 영업;
+    target.입주예정합산 += moveIn;
+
     target.난이도점수 +=
-      (p.단독 ?? 0) * weights.단독 +
-      (p.공동 ?? 0) * weights.공동 +
-      (p.영업 ?? 0) * weights.영업;
+      단독 * (weights.단독 ?? 2.0) +
+      공동 * (weights.공동 ?? 1.0) +
+      영업 * (weights.영업 ?? 3.0);
+
     if (p.is_downtown) target.도심권개수 += 1;
 
-    // 운영센터 분해 (예: "9001+9004" → [9001, 9004])
     const ops = String(p.운영센터 ?? p.주센터번호 ?? "")
       .split(/[+,]/)
       .map((s) => s.trim())
@@ -57,17 +62,58 @@ export function calculateZoneStats(features, dongAssignments, zoneCount, weights
     ops.forEach((o) => target.운영센터집합.add(o));
   });
 
-  // Set → 배열로 변환
-  Object.values(stats).forEach((s) => {
-    s.운영센터 = Array.from(s.운영센터집합).sort();
-    delete s.운영센터집합;
-    s.상담원수 = s.합계 / 24000;
-  });
-  unassigned.운영센터 = Array.from(unassigned.운영센터집합).sort();
-  delete unassigned.운영센터집합;
-  unassigned.상담원수 = unassigned.합계 / 24000;
+  // 후처리: Set → 배열 / 법적인원 산출
+  Object.values(stats).forEach(finalizeZone);
+  finalizeZone(unassigned);
 
   return { zones: stats, unassigned };
+}
+
+function makeEmptyZone(zoneIdx) {
+  return {
+    zone: zoneIdx,
+    dongCount: 0,
+    dongs: [],
+    단독: 0,
+    공동: 0,
+    영업: 0,
+    합계: 0,
+    난이도점수: 0,
+    도심권개수: 0,
+    입주예정합산: 0,
+    운영센터집합: new Set(),
+  };
+}
+
+/**
+ * 입주예정 합산: selectedMoveInYears에 포함된 모든 연도의 세대수 합산
+ */
+function getMoveInSum(dongName, moveInData, selectedYears) {
+  if (!moveInData || !selectedYears || selectedYears.length === 0) return 0;
+  const entry = moveInData[dongName];
+  if (!entry) return 0;
+  return selectedYears.reduce((sum, y) => sum + (entry[y] ?? 0), 0);
+}
+
+/**
+ * 권역 마무리: 운영센터 배열화 + 사무행정/법적인원 산출
+ */
+function finalizeZone(s) {
+  s.운영센터 = Array.from(s.운영센터집합).sort();
+  delete s.운영센터집합;
+
+  // 사무행정 인원 (기존 상담원수 유지)
+  s.상담원수 = s.합계 / STAFFING_RULES.office;
+
+  // 법적인원 산출 (V1 간이 방식: 세대당 라운드업)
+  const r = STAFFING_RULES.legalInspector;
+  s.법적단독 = Math.ceil(s.단독 / r.단독);
+  s.법적공동 = Math.ceil(s.공동 / r.공동);
+  s.법적영업 = Math.ceil(s.영업 / r.영업);
+  s.법적인원 = s.법적단독 + s.법적공동 + s.법적영업;
+
+  // 사무행정 인원 (라운드업)
+  s.사무행정인원 = s.합계 > 0 ? Math.ceil(s.합계 / STAFFING_RULES.office) : 0;
 }
 
 // 권역 라벨 자동 생성 (예: "9001+9004 통합")
