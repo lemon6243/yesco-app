@@ -21,13 +21,24 @@ export default function ZonePanel({ geoData }) {
   const v2TargetMin = useAppStore((s) => s.v2TargetMin);
   const v2TargetMax = useAppStore((s) => s.v2TargetMax);
 
+  // 입주예정 + 법적인원 관련
+  const moveInData = useAppStore((s) => s.moveInData);
+  const selectedMoveInYears = useAppStore((s) => s.selectedMoveInYears);
+  const unitTimes = useAppStore((s) => s.unitTimes);
+  const staffingMode = useAppStore((s) => s.staffingMode);
+  const showStaffing = useAppStore((s) => s.showStaffing);
+
   const adjacencyMap = useAdjacencyMap();
   const { metersByGrade, splitInfo } = useV2Data();
 
   const isV2 = appMode === "v2";
 
-  // V1/V2 분기 계산
+  // V1/V2 분기 계산 (입주예정 + 법적인원 옵션 전달)
   const { zones, unassigned } = useMemo(() => {
+    const commonOpts = {
+      moveInData,
+      selectedMoveInYears,
+    };
     if (isV2) {
       if (!metersByGrade) return { zones: {}, unassigned: null };
       return calculateZoneStatsV2(
@@ -35,7 +46,8 @@ export default function ZonePanel({ geoData }) {
         splitInfo,
         dongAssignments,
         zoneCount,
-        meterGradeWeights
+        meterGradeWeights,
+        { ...commonOpts, unitTimes, staffingMode }
       );
     }
     if (!geoData) return { zones: {}, unassigned: null };
@@ -43,7 +55,8 @@ export default function ZonePanel({ geoData }) {
       geoData.features,
       dongAssignments,
       zoneCount,
-      weights
+      weights,
+      commonOpts
     );
   }, [
     isV2,
@@ -54,6 +67,10 @@ export default function ZonePanel({ geoData }) {
     zoneCount,
     weights,
     meterGradeWeights,
+    moveInData,
+    selectedMoveInYears,
+    unitTimes,
+    staffingMode,
   ]);
 
   const adjIssues = useMemo(
@@ -69,7 +86,6 @@ export default function ZonePanel({ geoData }) {
   const zoneList = Object.values(zones);
   const totalAssigned = zoneList.reduce((s, z) => s + z.dongCount, 0);
 
-  // V1/V2에 따라 비교 기준값 분기
   const getZoneScore = (z) => (isV2 ? z.난이도점수 : z.합계);
   const getZoneTotal = (z) => (isV2 ? z.총수용가수 : z.합계);
   const currentTargetMin = isV2 ? v2TargetMin : targetMin;
@@ -77,8 +93,16 @@ export default function ZonePanel({ geoData }) {
   const labelFn = isV2 ? getZoneLabelV2 : getZoneLabel;
 
   const totalHouseholds = zoneList.reduce((s, z) => s + getZoneTotal(z), 0);
+  const totalMoveIn = zoneList.reduce(
+    (s, z) => s + (z.입주예정합산 ?? 0),
+    0
+  );
+  const totalLegal = zoneList.reduce((s, z) => s + (z.법적인원 ?? 0), 0);
+  const totalOffice = zoneList.reduce(
+    (s, z) => s + (z.사무행정인원 ?? 0),
+    0
+  );
 
-  // 표준편차 (V2는 난이도점수 기준, V1은 합계 기준)
   const activeZones = zoneList.filter((z) => getZoneScore(z) > 0);
   const mean =
     activeZones.length > 0
@@ -104,7 +128,6 @@ export default function ZonePanel({ geoData }) {
     return <span className="text-green-600 font-bold">✓ 충족</span>;
   };
 
-  // V2: 권역의 상위 3개 등급 표시용
   const topGrades = (z) => {
     if (!z.등급별합계) return null;
     return Object.entries(z.등급별합계)
@@ -147,6 +170,11 @@ export default function ZonePanel({ geoData }) {
         <div>
           {isV2 ? "총 수용가수" : "총 세대수"}:{" "}
           {totalHouseholds.toLocaleString()}
+          {totalMoveIn > 0 && (
+            <span className="ml-1 text-amber-700 font-semibold">
+              (입주예정 +{totalMoveIn.toLocaleString()})
+            </span>
+          )}
         </div>
         <div>
           {isV2 ? "난이도점수 " : ""}평균:{" "}
@@ -158,6 +186,17 @@ export default function ZonePanel({ geoData }) {
           {currentTargetMin.toLocaleString()} ~{" "}
           {currentTargetMax.toLocaleString()}
         </div>
+        {showStaffing && (totalLegal > 0 || totalOffice > 0) && (
+          <div className="pt-1 mt-1 border-t border-gray-300 text-sky-800 font-semibold">
+            👷 법적점검원: {totalLegal}명 / 사무행정: {totalOffice}명 / 총{" "}
+            {totalLegal + totalOffice}명
+          </div>
+        )}
+        {selectedMoveInYears.length > 0 && (
+          <div className="text-[11px] text-amber-700">
+            🏗️ 입주예정 반영: {selectedMoveInYears.join(", ")}
+          </div>
+        )}
       </div>
 
       {zoneList.map((z) => {
@@ -206,6 +245,11 @@ export default function ZonePanel({ geoData }) {
                 <>
                   <div className="font-semibold">
                     수용가수: {(z.총수용가수 ?? 0).toLocaleString()}
+                    {z.입주예정합산 > 0 && (
+                      <span className="ml-1 text-amber-700 text-[11px]">
+                        (입주 +{z.입주예정합산.toLocaleString()})
+                      </span>
+                    )}
                   </div>
                   <div className="font-bold text-amber-800">
                     난이도점수: {z.난이도점수.toLocaleString()}
@@ -224,6 +268,11 @@ export default function ZonePanel({ geoData }) {
                   </div>
                   <div className="font-semibold">
                     합계: {z.합계.toLocaleString()} 세대
+                    {z.입주예정합산 > 0 && (
+                      <span className="ml-1 text-amber-700 text-[11px]">
+                        (입주 +{z.입주예정합산.toLocaleString()})
+                      </span>
+                    )}
                   </div>
                   <div>
                     난이도점수: {Math.round(z.난이도점수).toLocaleString()}
@@ -232,6 +281,39 @@ export default function ZonePanel({ geoData }) {
               )}
 
               <div>상담원수: {z.상담원수.toFixed(2)}명</div>
+
+              {/* 법적인원 표시 (V1/V2 공통) */}
+              {showStaffing && (z.법적인원 > 0 || z.사무행정인원 > 0) && (
+                <div className="mt-1 pt-1 border-t border-sky-100 bg-sky-50 -mx-2 px-2 pb-1">
+                  <div className="text-sky-900 font-semibold text-[11px]">
+                    👷 인원 산출
+                    {isV2 && (
+                      <span className="ml-1 text-[10px] font-normal text-sky-600">
+                        ({staffingMode === "precise" ? "정밀" : "간이"})
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-sky-800 flex flex-wrap gap-x-2">
+                    <span>법적점검원: <b>{z.법적인원 ?? 0}명</b></span>
+                    <span>사무행정: <b>{z.사무행정인원 ?? 0}명</b></span>
+                    <span className="text-sky-900 font-bold">
+                      총 {(z.법적인원 ?? 0) + (z.사무행정인원 ?? 0)}명
+                    </span>
+                  </div>
+                  {!isV2 && (z.법적단독 > 0 || z.법적공동 > 0 || z.법적영업 > 0) && (
+                    <div className="text-[10px] text-sky-700">
+                      단독 {z.법적단독}명 / 공동 {z.법적공동}명 / 영업{" "}
+                      {z.법적영업}명
+                    </div>
+                  )}
+                  {isV2 && staffingMode === "precise" && z.작업시간합계 > 0 && (
+                    <div className="text-[10px] text-sky-700">
+                      연간 작업시간: {Math.round(z.작업시간합계 / 60).toLocaleString()}시간
+                    </div>
+                  )}
+                </div>
+              )}
+
               {adj.components > 1 && (
                 <div className="text-red-600 font-semibold mt-1">
                   ⚠ 인접성 위반: {adj.components}개 그룹 (고립{" "}
@@ -256,6 +338,12 @@ export default function ZonePanel({ geoData }) {
               ? `수용가 ${unassigned.총수용가수.toLocaleString()} / 난이도점수 ${unassigned.난이도점수.toLocaleString()}`
               : `합계 ${unassigned.합계.toLocaleString()} 세대`}
           </div>
+          {showStaffing && unassigned.법적인원 > 0 && (
+            <div className="text-[11px] text-sky-700 mt-1">
+              👷 법적점검원: {unassigned.법적인원}명 / 사무행정:{" "}
+              {unassigned.사무행정인원}명
+            </div>
+          )}
         </div>
       )}
     </div>
