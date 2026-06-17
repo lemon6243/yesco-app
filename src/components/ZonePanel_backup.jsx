@@ -1,80 +1,163 @@
-import { useState, useCallback, useEffect } from "react";
-import MapView from "./components/MapView";
-import ControlPanel from "./components/ControlPanel";
-import ControlPanelV2 from "./components/ControlPanelV2";
-import ZonePanel from "./components/ZonePanel";
-import HelpModal from "./components/HelpModal";
-import useAppStore from "./store/useAppStore";
+import { useMemo } from "react";
+import useAppStore, { ZONE_COLORS } from "../store/useAppStore";
+import { calculateZoneStats, getZoneLabel } from "../utils/zoneCalculator";
+import { useAdjacencyMap } from "../utils/dataLoader";
+import { checkAdjacency, checkDowntown } from "../utils/validator";
+import { exportZonesCSV } from "../utils/scenarioManager";
 
-const FIRST_VISIT_KEY = "yesco_help_seen_v1";
+export default function ZonePanel({ geoData }) {
+  const zoneCount = useAppStore((s) => s.zoneCount);
+  const dongAssignments = useAppStore((s) => s.dongAssignments);
+  const weights = useAppStore((s) => s.weights);
+  const targetMin = useAppStore((s) => s.targetMin);
+  const targetMax = useAppStore((s) => s.targetMax);
 
-export default function App() {
-  const [geoData, setGeoData] = useState(null);
-  const [helpOpen, setHelpOpen] = useState(false);
-  const handleDataLoaded = useCallback((data) => setGeoData(data), []);
-  const appMode = useAppStore((s) => s.appMode);
+  const adjacencyMap = useAdjacencyMap();
 
-  // 첫 방문 시 자동으로 도움말 열기
-  useEffect(() => {
-    if (!localStorage.getItem(FIRST_VISIT_KEY)) {
-      setHelpOpen(true);
-      localStorage.setItem(FIRST_VISIT_KEY, "1");
-    }
-  }, []);
+  const { zones, unassigned } = useMemo(() => {
+    if (!geoData) return { zones: {}, unassigned: null };
+    return calculateZoneStats(
+      geoData.features,
+      dongAssignments,
+      zoneCount,
+      weights
+    );
+  }, [geoData, dongAssignments, zoneCount, weights]);
 
-  // F1 단축키
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "F1") {
-        e.preventDefault();
-        setHelpOpen(true);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  const adjIssues = useMemo(
+    () => checkAdjacency(dongAssignments, adjacencyMap, zoneCount),
+    [dongAssignments, adjacencyMap, zoneCount]
+  );
+
+  const downtownWarnings = useMemo(() => {
+    if (!geoData) return {};
+    return checkDowntown(geoData.features, dongAssignments, zoneCount, 2);
+  }, [geoData, dongAssignments, zoneCount]);
+
+  const zoneList = Object.values(zones);
+  const totalAssigned = zoneList.reduce((s, z) => s + z.dongCount, 0);
+  const totalHouseholds = zoneList.reduce((s, z) => s + z.합계, 0);
+
+  // 표준편차 계산 (활성 권역만)
+  const activeZones = zoneList.filter((z) => z.합계 > 0);
+  const mean =
+    activeZones.length > 0
+      ? activeZones.reduce((s, z) => s + z.합계, 0) / activeZones.length
+      : 0;
+  const stdDev =
+    activeZones.length > 0
+      ? Math.sqrt(
+          activeZones.reduce((s, z) => s + (z.합계 - mean) ** 2, 0) /
+            activeZones.length
+        )
+      : 0;
+
+  const statusBadge = (total) => {
+    if (total === 0) return <span className="text-gray-400">—</span>;
+    if (total < targetMin)
+      return <span className="text-orange-600 font-bold">⚠ 미달</span>;
+    if (total > targetMax)
+      return <span className="text-red-600 font-bold">⚠ 초과</span>;
+    return <span className="text-green-600 font-bold">✓ 충족</span>;
+  };
 
   return (
-    <div className="flex h-screen w-screen">
-      <aside className="w-72 border-r border-gray-300 bg-gray-50 flex flex-col overflow-y-auto">
-        <div className="flex-1">
-          <ControlPanel geoData={geoData} />
-        </div>
-        <ControlPanelV2 />
-      </aside>
+    <div className="p-3 space-y-3 overflow-y-auto h-full text-sm">
+      <div className="flex justify-between items-center">
+        <h2 className="font-bold text-base">📊 권역 현황</h2>
+        <button
+          onClick={() => exportZonesCSV(zones, getZoneLabel)}
+          className="text-xs bg-emerald-600 text-white px-2 py-1 rounded hover:bg-emerald-700"
+          title="권역 결과를 CSV로 내보내기"
+        >
+          ⬇ CSV
+        </button>
+      </div>
 
-      <main className="flex-1 relative">
-        <header className="absolute top-0 left-0 right-0 z-[1000] bg-white/95 px-4 py-2 border-b border-gray-300 flex justify-between items-center">
-          <div>
-            <h1 className="font-bold text-lg">
-              예스코 고객센터 통합 시뮬레이터
-            </h1>
-            <div className="text-[11px] text-gray-600">
-              제작 · CS팀 김종익 매니저 · v1.0
-              {appMode === "v2" && (
-                <span className="ml-2 px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-[10px] font-semibold">
-                  + V2 beta
+      <div className="bg-gray-100 rounded p-2 text-xs space-y-1">
+        <div>
+          할당: {totalAssigned} / {geoData?.features?.length ?? 0} 동
+        </div>
+        <div>총 세대수: {totalHouseholds.toLocaleString()}</div>
+        <div>
+          평균: {Math.round(mean).toLocaleString()} / 표준편차:{" "}
+          {Math.round(stdDev).toLocaleString()}
+        </div>
+        <div className="text-gray-600">
+          목표 범위: {targetMin.toLocaleString()} ~ {targetMax.toLocaleString()}
+        </div>
+      </div>
+
+      {zoneList.map((z) => {
+        const adj = adjIssues[z.zone] || { isolatedDongs: [], components: 0 };
+        const dt = downtownWarnings[z.zone] || { count: 0, isWarning: false };
+        return (
+          <div
+            key={z.zone}
+            className="border rounded p-2 bg-white"
+            style={{
+              borderLeftColor: ZONE_COLORS[(z.zone - 1) % ZONE_COLORS.length],
+              borderLeftWidth: 4,
+            }}
+          >
+            <div className="flex justify-between items-center mb-1">
+              <div className="font-bold">
+                권역 {z.zone}
+                <span className="ml-2 text-xs text-gray-600">
+                  {getZoneLabel(z)}
                 </span>
+              </div>
+              {statusBadge(z.합계)}
+            </div>
+            <div className="text-xs space-y-0.5">
+              <div>
+                행정동: {z.dongCount}개
+                {z.도심권개수 > 0 && (
+                  <span
+                    className={`ml-1 ${
+                      dt.isWarning
+                        ? "text-red-600 font-bold"
+                        : "text-purple-600"
+                    }`}
+                  >
+                    (도심 {z.도심권개수}
+                    {dt.isWarning ? " ⚠" : ""})
+                  </span>
+                )}
+              </div>
+              <div>
+                단독: {z.단독.toLocaleString()} / 공동: {z.공동.toLocaleString()}{" "}
+                / 영업: {z.영업.toLocaleString()}
+              </div>
+              <div className="font-semibold">
+                합계: {z.합계.toLocaleString()} 세대
+              </div>
+              <div>난이도점수: {Math.round(z.난이도점수).toLocaleString()}</div>
+              <div>상담원수: {z.상담원수.toFixed(2)}명</div>
+              {adj.components > 1 && (
+                <div className="text-red-600 font-semibold mt-1">
+                  ⚠ 인접성 위반: {adj.components}개 그룹 (고립{" "}
+                  {adj.isolatedDongs.length}개)
+                  <div className="text-xs font-normal text-red-500">
+                    {adj.isolatedDongs.slice(0, 4).join(", ")}
+                    {adj.isolatedDongs.length > 4 ? " 등" : ""}
+                  </div>
+                </div>
               )}
             </div>
           </div>
-          <button
-            onClick={() => setHelpOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded shadow-sm flex items-center gap-1"
-            title="사용 설명서 열기 (F1)"
-          >
-            <span>📘</span>
-            <span>사용 설명서</span>
-          </button>
-        </header>
-        <MapView onDataLoaded={handleDataLoaded} />
-      </main>
+        );
+      })}
 
-      <aside className="w-80 border-l border-gray-300 bg-gray-50">
-        <ZonePanel geoData={geoData} />
-      </aside>
-
-      <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
+      {unassigned && unassigned.dongCount > 0 && (
+        <div className="border-2 border-dashed border-gray-400 rounded p-2 bg-white">
+          <div className="font-bold text-gray-700 mb-1">미할당</div>
+          <div className="text-xs">
+            {unassigned.dongCount}개 동 / 합계{" "}
+            {unassigned.합계.toLocaleString()} 세대
+          </div>
+        </div>
+      )}
     </div>
   );
 }
