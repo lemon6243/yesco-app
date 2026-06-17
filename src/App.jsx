@@ -1,80 +1,97 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import MapView from "./components/MapView";
 import ControlPanel from "./components/ControlPanel";
 import ControlPanelV2 from "./components/ControlPanelV2";
 import ZonePanel from "./components/ZonePanel";
 import HelpModal from "./components/HelpModal";
-import useAppStore from "./store/useAppStore";
+import { useAppStore } from "./store/useAppStore";
 
 const FIRST_VISIT_KEY = "yesco_help_seen_v1";
 
 export default function App() {
   const [geoData, setGeoData] = useState(null);
-  const [helpOpen, setHelpOpen] = useState(false);
-  const handleDataLoaded = useCallback((data) => setGeoData(data), []);
+  const [showHelp, setShowHelp] = useState(false);
   const appMode = useAppStore((s) => s.appMode);
+  const setAppMode = useAppStore((s) => s.setAppMode);
 
-  // 첫 방문 시 자동으로 도움말 열기
   useEffect(() => {
     if (!localStorage.getItem(FIRST_VISIT_KEY)) {
-      setHelpOpen(true);
+      setShowHelp(true);
       localStorage.setItem(FIRST_VISIT_KEY, "1");
     }
-  }, []);
-
-  // F1 단축키
-  useEffect(() => {
     const onKey = (e) => {
       if (e.key === "F1") {
         e.preventDefault();
-        setHelpOpen(true);
+        setShowHelp(true);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const isV2 = appMode === "v2";
+
   return (
-    <div className="flex h-screen w-screen">
-      <aside className="w-72 border-r border-gray-300 bg-gray-50 flex flex-col overflow-y-auto">
-        <div className="flex-1">
-          <ControlPanel geoData={geoData} />
+    <div className="h-screen flex flex-col bg-gray-50">
+      {/* 최상단 헤더: V1/V2 토글 */}
+      <header className="bg-white border-b shadow-sm px-4 py-2 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-bold text-gray-800">
+            예스코 고객센터 통합 시뮬레이터
+          </h1>
+          <span className="text-xs text-gray-500">v1.0 + v2 beta</span>
         </div>
-        <ControlPanelV2 />
-      </aside>
 
-      <main className="flex-1 relative">
-        <header className="absolute top-0 left-0 right-0 z-[1000] bg-white/95 px-4 py-2 border-b border-gray-300 flex justify-between items-center">
-          <div>
-            <h1 className="font-bold text-lg">
-              예스코 고객센터 통합 시뮬레이터
-            </h1>
-            <div className="text-[11px] text-gray-600">
-              제작 · CS팀 김종익 매니저 · v1.0
-              {appMode === "v2" && (
-                <span className="ml-2 px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-[10px] font-semibold">
-                  + V2 beta
-                </span>
-              )}
-            </div>
-          </div>
+        {/* V1/V2 토글 (최상단 중앙 강조) */}
+        <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
           <button
-            onClick={() => setHelpOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded shadow-sm flex items-center gap-1"
-            title="사용 설명서 열기 (F1)"
+            onClick={() => setAppMode("v1")}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
+              !isV2
+                ? "bg-blue-600 text-white shadow"
+                : "text-gray-600 hover:bg-gray-200"
+            }`}
           >
-            <span>📘</span>
-            <span>사용 설명서</span>
+            V1 (기본)
           </button>
-        </header>
-        <MapView onDataLoaded={handleDataLoaded} />
-      </main>
+          <button
+            onClick={() => setAppMode("v2")}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
+              isV2
+                ? "bg-purple-600 text-white shadow"
+                : "text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            ⚡ V2 (등급 기반)
+          </button>
+        </div>
 
-      <aside className="w-80 border-l border-gray-300 bg-gray-50">
-        <ZonePanel geoData={geoData} />
-      </aside>
+        <button
+          onClick={() => setShowHelp(true)}
+          className="text-sm text-gray-600 hover:text-gray-900 px-3 py-1 border rounded"
+          title="F1"
+        >
+          ❓ 도움말
+        </button>
+      </header>
 
-      <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
+      {/* 본문 */}
+      <div className="flex-1 flex overflow-hidden">
+        <aside className="w-80 bg-white border-r flex flex-col overflow-y-auto">
+          <ControlPanel />
+          {isV2 && <ControlPanelV2 />}
+        </aside>
+
+        <main className="flex-1 relative">
+          <MapView onDataLoaded={setGeoData} />
+        </main>
+
+        <aside className="w-96 bg-white border-l overflow-y-auto">
+          <ZonePanel geoData={geoData} />
+        </aside>
+      </div>
+
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
     </div>
   );
 }
