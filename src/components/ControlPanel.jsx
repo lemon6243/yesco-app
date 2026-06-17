@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import useAppStore, { ZONE_COLORS } from "../store/useAppStore";
+import useAppStore, { ZONE_COLORS, MOVE_IN_YEARS } from "../store/useAppStore";
 import { exportScenario, importScenario } from "../utils/scenarioManager";
 import { useAdjacencyMap } from "../utils/dataLoader";
 import { autoAssignZones } from "../utils/autoAssign";
@@ -26,6 +26,20 @@ export default function ControlPanel({ geoData }) {
   const setShowLabels = useAppStore((s) => s.setShowLabels);
   const labelType = useAppStore((s) => s.labelType);
   const setLabelType = useAppStore((s) => s.setLabelType);
+
+  // 입주예정 토글
+  const moveInData = useAppStore((s) => s.moveInData);
+  const selectedMoveInYears = useAppStore((s) => s.selectedMoveInYears);
+  const toggleMoveInYear = useAppStore((s) => s.toggleMoveInYear);
+  const clearMoveInYears = useAppStore((s) => s.clearMoveInYears);
+  const setAllMoveInYears = useAppStore((s) => s.setAllMoveInYears);
+
+  // 법적인원 옵션
+  const showStaffing = useAppStore((s) => s.showStaffing);
+  const setShowStaffing = useAppStore((s) => s.setShowStaffing);
+  const staffingMode = useAppStore((s) => s.staffingMode);
+  const setStaffingMode = useAppStore((s) => s.setStaffingMode);
+  const appMode = useAppStore((s) => s.appMode);
 
   const handleExport = () => exportScenario(useAppStore.getState());
   const handleImportClick = () => fileInputRef.current?.click();
@@ -56,7 +70,6 @@ export default function ControlPanel({ geoData }) {
     return true;
   };
 
-  // 전체 자동 배정 (기존 할당 모두 덮어씀)
   const handleAutoAssignAll = () => {
     if (!canAutoAssign()) return;
     if (!confirm(
@@ -78,7 +91,6 @@ export default function ControlPanel({ geoData }) {
     }
   };
 
-  // 미할당 동만 자동 채우기 (기존 할당 유지)
   const handleAutoFillRest = () => {
     if (!canAutoAssign()) return;
     const assignedCount = Object.keys(dongAssignments).length;
@@ -104,6 +116,14 @@ export default function ControlPanel({ geoData }) {
       console.error(err);
     }
   };
+
+  // 입주예정 합계 (선택된 연도 기준)
+  const moveInTotal = Object.values(moveInData ?? {}).reduce((sum, entry) => {
+    return sum + selectedMoveInYears.reduce((s, y) => s + (entry[y] ?? 0), 0);
+  }, 0);
+  const moveInDongCount = Object.entries(moveInData ?? {}).filter(([, entry]) =>
+    selectedMoveInYears.some((y) => (entry[y] ?? 0) > 0)
+  ).length;
 
   return (
     <div className="p-3 space-y-4 overflow-y-auto h-full text-sm">
@@ -192,6 +212,109 @@ export default function ControlPanel({ geoData }) {
         <div className="text-[10px] text-gray-500 mt-1">
           인접성·난이도 균형·도심권 분산 기준으로 배정
         </div>
+      </section>
+
+      {/* ───────────────────────────────────────────── */}
+      {/* 🏗️ 입주예정 연도 토글 (V1/V2 공통, 신규) */}
+      {/* ───────────────────────────────────────────── */}
+      <section className="bg-amber-50 border border-amber-200 rounded p-2 space-y-1">
+        <div className="flex items-center justify-between">
+          <div className="font-semibold text-amber-900">🏗️ 입주예정 반영</div>
+          <div className="flex gap-1">
+            <button
+              onClick={setAllMoveInYears}
+              className="text-[10px] px-1.5 py-0.5 bg-amber-200 hover:bg-amber-300 rounded"
+              title="모든 연도 선택"
+            >
+              전체
+            </button>
+            <button
+              onClick={clearMoveInYears}
+              className="text-[10px] px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 rounded"
+              title="선택 해제"
+            >
+              해제
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-5 gap-1">
+          {MOVE_IN_YEARS.map((year) => {
+            const isOn = selectedMoveInYears.includes(year);
+            return (
+              <button
+                key={year}
+                onClick={() => toggleMoveInYear(year)}
+                className={`px-1 py-1 rounded border text-xs font-medium transition ${
+                  isOn
+                    ? "bg-amber-500 text-white border-amber-600 shadow"
+                    : "bg-white text-gray-600 border-gray-300 hover:bg-amber-100"
+                }`}
+              >
+                +{year}
+              </button>
+            );
+          })}
+        </div>
+        {selectedMoveInYears.length > 0 ? (
+          <div className="text-[11px] text-amber-900 mt-1">
+            {moveInDongCount}개 동 · +{moveInTotal.toLocaleString()}세대 반영 중
+          </div>
+        ) : (
+          <div className="text-[10px] text-gray-500 mt-1">
+            연도를 선택하면 해당 입주 세대수가 누적 반영됩니다
+          </div>
+        )}
+      </section>
+
+      {/* ───────────────────────────────────────────── */}
+      {/* 👷 법적인원 표시 옵션 (V1/V2 공통, 신규) */}
+      {/* ───────────────────────────────────────────── */}
+      <section className="bg-sky-50 border border-sky-200 rounded p-2 space-y-1">
+        <div className="font-semibold text-sky-900">👷 법적인원 산출</div>
+        <label className="flex items-center gap-2 text-xs">
+          <input
+            type="checkbox"
+            checked={showStaffing}
+            onChange={(e) => setShowStaffing(e.target.checked)}
+          />
+          <span>권역 패널에 법적인원 표시</span>
+        </label>
+        {appMode === "v2" && (
+          <div className="space-y-1 pt-1 border-t border-sky-200">
+            <div className="text-[10px] text-sky-700 font-medium">
+              V2 산출 방식
+            </div>
+            <div className="grid grid-cols-2 gap-1">
+              <button
+                onClick={() => setStaffingMode("simple")}
+                className={`px-1 py-1 rounded border text-[11px] ${
+                  staffingMode === "simple"
+                    ? "bg-sky-600 text-white border-sky-700"
+                    : "bg-white border-gray-300"
+                }`}
+                title="세대당 라운드업 (간이)"
+              >
+                간이
+              </button>
+              <button
+                onClick={() => setStaffingMode("precise")}
+                className={`px-1 py-1 rounded border text-[11px] ${
+                  staffingMode === "precise"
+                    ? "bg-sky-600 text-white border-sky-700"
+                    : "bg-white border-gray-300"
+                }`}
+                title="단위시간 × 작업량 (정밀)"
+              >
+                정밀
+              </button>
+            </div>
+            <div className="text-[10px] text-gray-600">
+              {staffingMode === "simple"
+                ? "공동 4000/영업 3000세대당 1명"
+                : "센터별 단위시간 × 연간 작업량 / 1인 가용시간"}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* 현재 선택 권역 */}
