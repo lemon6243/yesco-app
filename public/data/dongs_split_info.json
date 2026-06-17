@@ -1,0 +1,1444 @@
+{
+  "_meta": {
+    "description": "행정동별 센터 관할 정보 (분할동 식별용)",
+    "version": "1.0",
+    "generated": "2026-06-17",
+    "total_dongs": 120,
+    "split_dongs_count": 16,
+    "note": "is_split=true인 행정동은 여러 센터가 공동 관리. UI에서 빗금/배지로 표시."
+  },
+  "dongs": {
+    "가회동": {
+      "total": 2626,
+      "is_split": false,
+      "primary": {
+        "center_code": "9022",
+        "center_name": "서부",
+        "count": 2626,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "광장동": {
+      "total": 12156,
+      "is_split": false,
+      "primary": {
+        "center_code": "9004",
+        "center_name": "구의",
+        "count": 12156,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "광희동": {
+      "total": 6777,
+      "is_split": false,
+      "primary": {
+        "center_code": "9003",
+        "center_name": "중부",
+        "count": 6777,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "교남동": {
+      "total": 4662,
+      "is_split": false,
+      "primary": {
+        "center_code": "9022",
+        "center_name": "서부",
+        "count": 4662,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "구의제1동": {
+      "total": 15492,
+      "is_split": true,
+      "primary": {
+        "center_code": "9004",
+        "center_name": "구의",
+        "count": 14756,
+        "ratio": 0.9525
+      },
+      "secondary": [
+        {
+          "center_code": "9001",
+          "center_name": "자양",
+          "count": 736,
+          "ratio": 0.0475
+        }
+      ]
+    },
+    "구의제2동": {
+      "total": 12481,
+      "is_split": false,
+      "primary": {
+        "center_code": "9012",
+        "center_name": "중곡",
+        "count": 12481,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "구의제3동": {
+      "total": 12961,
+      "is_split": false,
+      "primary": {
+        "center_code": "9004",
+        "center_name": "구의",
+        "count": 12961,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "군자동": {
+      "total": 13879,
+      "is_split": false,
+      "primary": {
+        "center_code": "9020",
+        "center_name": "성수",
+        "count": 13879,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "금호1가동": {
+      "total": 7106,
+      "is_split": false,
+      "primary": {
+        "center_code": "9005",
+        "center_name": "금호",
+        "count": 7106,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "금호2.3가동": {
+      "total": 9708,
+      "is_split": false,
+      "primary": {
+        "center_code": "9005",
+        "center_name": "금호",
+        "count": 9708,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "금호4가동": {
+      "total": 6585,
+      "is_split": false,
+      "primary": {
+        "center_code": "9005",
+        "center_name": "금호",
+        "count": 6585,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "길음제1동": {
+      "total": 713,
+      "is_split": false,
+      "primary": {
+        "center_code": "9021",
+        "center_name": "정릉",
+        "count": 713,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "남영동": {
+      "total": 4467,
+      "is_split": true,
+      "primary": {
+        "center_code": "9016",
+        "center_name": "용산",
+        "count": 4464,
+        "ratio": 0.9993
+      },
+      "secondary": [
+        {
+          "center_code": "9022",
+          "center_name": "서부",
+          "count": 3,
+          "ratio": 0.0007
+        }
+      ]
+    },
+    "능동": {
+      "total": 7322,
+      "is_split": false,
+      "primary": {
+        "center_code": "9001",
+        "center_name": "자양",
+        "count": 7322,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "다산동": {
+      "total": 7714,
+      "is_split": false,
+      "primary": {
+        "center_code": "9003",
+        "center_name": "중부",
+        "count": 7714,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "답십리제1동": {
+      "total": 15536,
+      "is_split": false,
+      "primary": {
+        "center_code": "9018",
+        "center_name": "장안",
+        "count": 15536,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "답십리제2동": {
+      "total": 12699,
+      "is_split": false,
+      "primary": {
+        "center_code": "9018",
+        "center_name": "장안",
+        "count": 12699,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "돈암제1동": {
+      "total": 6574,
+      "is_split": true,
+      "primary": {
+        "center_code": "9011",
+        "center_name": "삼선",
+        "count": 6493,
+        "ratio": 0.9877
+      },
+      "secondary": [
+        {
+          "center_code": "9021",
+          "center_name": "정릉",
+          "count": 81,
+          "ratio": 0.0123
+        }
+      ]
+    },
+    "돈암제2동": {
+      "total": 8347,
+      "is_split": false,
+      "primary": {
+        "center_code": "9021",
+        "center_name": "정릉",
+        "count": 8347,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "동선동": {
+      "total": 11392,
+      "is_split": true,
+      "primary": {
+        "center_code": "9021",
+        "center_name": "정릉",
+        "count": 7017,
+        "ratio": 0.616
+      },
+      "secondary": [
+        {
+          "center_code": "9011",
+          "center_name": "삼선",
+          "count": 4375,
+          "ratio": 0.384
+        }
+      ]
+    },
+    "동화동": {
+      "total": 4317,
+      "is_split": false,
+      "primary": {
+        "center_code": "9003",
+        "center_name": "중부",
+        "count": 4317,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "마장동": {
+      "total": 12296,
+      "is_split": false,
+      "primary": {
+        "center_code": "9007",
+        "center_name": "행당",
+        "count": 12296,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "망우본동": {
+      "total": 20546,
+      "is_split": true,
+      "primary": {
+        "center_code": "9006",
+        "center_name": "면목",
+        "count": 10786,
+        "ratio": 0.525
+      },
+      "secondary": [
+        {
+          "center_code": "9013",
+          "center_name": "신내",
+          "count": 9760,
+          "ratio": 0.475
+        }
+      ]
+    },
+    "망우제3동": {
+      "total": 9191,
+      "is_split": false,
+      "primary": {
+        "center_code": "9006",
+        "center_name": "면목",
+        "count": 9191,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "면목본동": {
+      "total": 19386,
+      "is_split": false,
+      "primary": {
+        "center_code": "9019",
+        "center_name": "상봉",
+        "count": 19386,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "면목제2동": {
+      "total": 14333,
+      "is_split": false,
+      "primary": {
+        "center_code": "9019",
+        "center_name": "상봉",
+        "count": 14333,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "면목제3.8동": {
+      "total": 13951,
+      "is_split": false,
+      "primary": {
+        "center_code": "9006",
+        "center_name": "면목",
+        "count": 13951,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "면목제4동": {
+      "total": 9646,
+      "is_split": false,
+      "primary": {
+        "center_code": "9006",
+        "center_name": "면목",
+        "count": 9646,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "면목제5동": {
+      "total": 6855,
+      "is_split": false,
+      "primary": {
+        "center_code": "9019",
+        "center_name": "상봉",
+        "count": 6855,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "면목제7동": {
+      "total": 11475,
+      "is_split": false,
+      "primary": {
+        "center_code": "9006",
+        "center_name": "면목",
+        "count": 11475,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "명동": {
+      "total": 2876,
+      "is_split": true,
+      "primary": {
+        "center_code": "9022",
+        "center_name": "서부",
+        "count": 2576,
+        "ratio": 0.8957
+      },
+      "secondary": [
+        {
+          "center_code": "9003",
+          "center_name": "중부",
+          "count": 300,
+          "ratio": 0.1043
+        }
+      ]
+    },
+    "무악동": {
+      "total": 3064,
+      "is_split": false,
+      "primary": {
+        "center_code": "9022",
+        "center_name": "서부",
+        "count": 3064,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "묵제1동": {
+      "total": 16713,
+      "is_split": false,
+      "primary": {
+        "center_code": "9009",
+        "center_name": "중화",
+        "count": 16713,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "묵제2동": {
+      "total": 10022,
+      "is_split": false,
+      "primary": {
+        "center_code": "9009",
+        "center_name": "중화",
+        "count": 10022,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "보광동": {
+      "total": 3610,
+      "is_split": false,
+      "primary": {
+        "center_code": "9016",
+        "center_name": "용산",
+        "count": 3610,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "보문동": {
+      "total": 9040,
+      "is_split": false,
+      "primary": {
+        "center_code": "9011",
+        "center_name": "삼선",
+        "count": 9040,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "사근동": {
+      "total": 5421,
+      "is_split": false,
+      "primary": {
+        "center_code": "9007",
+        "center_name": "행당",
+        "count": 5421,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "사직동": {
+      "total": 7436,
+      "is_split": false,
+      "primary": {
+        "center_code": "9022",
+        "center_name": "서부",
+        "count": 7436,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "삼선동": {
+      "total": 12711,
+      "is_split": true,
+      "primary": {
+        "center_code": "9011",
+        "center_name": "삼선",
+        "count": 7518,
+        "ratio": 0.5915
+      },
+      "secondary": [
+        {
+          "center_code": "9014",
+          "center_name": "종로",
+          "count": 5193,
+          "ratio": 0.4085
+        }
+      ]
+    },
+    "삼청동": {
+      "total": 1853,
+      "is_split": false,
+      "primary": {
+        "center_code": "9022",
+        "center_name": "서부",
+        "count": 1853,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "상봉제1동": {
+      "total": 11022,
+      "is_split": false,
+      "primary": {
+        "center_code": "9013",
+        "center_name": "신내",
+        "count": 11022,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "상봉제2동": {
+      "total": 15856,
+      "is_split": false,
+      "primary": {
+        "center_code": "9019",
+        "center_name": "상봉",
+        "count": 15856,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "서빙고동": {
+      "total": 3491,
+      "is_split": false,
+      "primary": {
+        "center_code": "9016",
+        "center_name": "용산",
+        "count": 3491,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "석관동": {
+      "total": 6,
+      "is_split": false,
+      "primary": {
+        "center_code": "9002",
+        "center_name": "휘경",
+        "count": 6,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "성북동": {
+      "total": 8875,
+      "is_split": false,
+      "primary": {
+        "center_code": "9021",
+        "center_name": "정릉",
+        "count": 8875,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "성수1가제1동": {
+      "total": 7835,
+      "is_split": false,
+      "primary": {
+        "center_code": "9020",
+        "center_name": "성수",
+        "count": 7835,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "성수1가제2동": {
+      "total": 9190,
+      "is_split": false,
+      "primary": {
+        "center_code": "9020",
+        "center_name": "성수",
+        "count": 9190,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "성수2가제1동": {
+      "total": 8986,
+      "is_split": false,
+      "primary": {
+        "center_code": "9020",
+        "center_name": "성수",
+        "count": 8986,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "성수2가제3동": {
+      "total": 6331,
+      "is_split": false,
+      "primary": {
+        "center_code": "9020",
+        "center_name": "성수",
+        "count": 6331,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "소공동": {
+      "total": 3354,
+      "is_split": false,
+      "primary": {
+        "center_code": "9022",
+        "center_name": "서부",
+        "count": 3354,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "송정동": {
+      "total": 6298,
+      "is_split": false,
+      "primary": {
+        "center_code": "9020",
+        "center_name": "성수",
+        "count": 6298,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "숭인제1동": {
+      "total": 3062,
+      "is_split": false,
+      "primary": {
+        "center_code": "9014",
+        "center_name": "종로",
+        "count": 3062,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "숭인제2동": {
+      "total": 8558,
+      "is_split": false,
+      "primary": {
+        "center_code": "9014",
+        "center_name": "종로",
+        "count": 8558,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "신내1동": {
+      "total": 15228,
+      "is_split": false,
+      "primary": {
+        "center_code": "9013",
+        "center_name": "신내",
+        "count": 15228,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "신내2동": {
+      "total": 8958,
+      "is_split": false,
+      "primary": {
+        "center_code": "9013",
+        "center_name": "신내",
+        "count": 8958,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "신당동": {
+      "total": 7332,
+      "is_split": false,
+      "primary": {
+        "center_code": "9003",
+        "center_name": "중부",
+        "count": 7332,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "신당제5동": {
+      "total": 5766,
+      "is_split": false,
+      "primary": {
+        "center_code": "9003",
+        "center_name": "중부",
+        "count": 5766,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "신설동": {
+      "total": 7,
+      "is_split": false,
+      "primary": {
+        "center_code": "9010",
+        "center_name": "제기",
+        "count": 7,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "아현동": {
+      "total": 25,
+      "is_split": false,
+      "primary": {
+        "center_code": "9022",
+        "center_name": "서부",
+        "count": 25,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "안암동": {
+      "total": 13050,
+      "is_split": false,
+      "primary": {
+        "center_code": "9011",
+        "center_name": "삼선",
+        "count": 13050,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "약수동": {
+      "total": 7824,
+      "is_split": false,
+      "primary": {
+        "center_code": "9003",
+        "center_name": "중부",
+        "count": 7824,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "옥수동": {
+      "total": 11022,
+      "is_split": false,
+      "primary": {
+        "center_code": "9005",
+        "center_name": "금호",
+        "count": 11022,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "왕십리도선동": {
+      "total": 13723,
+      "is_split": true,
+      "primary": {
+        "center_code": "9010",
+        "center_name": "제기",
+        "count": 7687,
+        "ratio": 0.5602
+      },
+      "secondary": [
+        {
+          "center_code": "9007",
+          "center_name": "행당",
+          "count": 6036,
+          "ratio": 0.4398
+        }
+      ]
+    },
+    "왕십리제2동": {
+      "total": 8221,
+      "is_split": false,
+      "primary": {
+        "center_code": "9007",
+        "center_name": "행당",
+        "count": 8221,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "용답동": {
+      "total": 9775,
+      "is_split": true,
+      "primary": {
+        "center_code": "9007",
+        "center_name": "행당",
+        "count": 9767,
+        "ratio": 0.9992
+      },
+      "secondary": [
+        {
+          "center_code": "9020",
+          "center_name": "성수",
+          "count": 8,
+          "ratio": 0.0008
+        }
+      ]
+    },
+    "용두동": {
+      "total": 15,
+      "is_split": false,
+      "primary": {
+        "center_code": "9010",
+        "center_name": "제기",
+        "count": 15,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "용산2가동": {
+      "total": 6459,
+      "is_split": false,
+      "primary": {
+        "center_code": "9016",
+        "center_name": "용산",
+        "count": 6459,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "용신동": {
+      "total": 25488,
+      "is_split": false,
+      "primary": {
+        "center_code": "9010",
+        "center_name": "제기",
+        "count": 25488,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "을지로동": {
+      "total": 3887,
+      "is_split": false,
+      "primary": {
+        "center_code": "9003",
+        "center_name": "중부",
+        "count": 3887,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "응봉동": {
+      "total": 5789,
+      "is_split": false,
+      "primary": {
+        "center_code": "9005",
+        "center_name": "금호",
+        "count": 5789,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "이문제1동": {
+      "total": 20692,
+      "is_split": true,
+      "primary": {
+        "center_code": "9002",
+        "center_name": "휘경",
+        "count": 10763,
+        "ratio": 0.5202
+      },
+      "secondary": [
+        {
+          "center_code": "9009",
+          "center_name": "중화",
+          "count": 9929,
+          "ratio": 0.4798
+        }
+      ]
+    },
+    "이문제2동": {
+      "total": 8857,
+      "is_split": false,
+      "primary": {
+        "center_code": "9009",
+        "center_name": "중화",
+        "count": 8857,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "이태원제1동": {
+      "total": 4690,
+      "is_split": false,
+      "primary": {
+        "center_code": "9016",
+        "center_name": "용산",
+        "count": 4690,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "이태원제2동": {
+      "total": 6555,
+      "is_split": false,
+      "primary": {
+        "center_code": "9016",
+        "center_name": "용산",
+        "count": 6555,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "이화동": {
+      "total": 5672,
+      "is_split": false,
+      "primary": {
+        "center_code": "9014",
+        "center_name": "종로",
+        "count": 5672,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "자양제1동": {
+      "total": 12984,
+      "is_split": true,
+      "primary": {
+        "center_code": "9004",
+        "center_name": "구의",
+        "count": 9875,
+        "ratio": 0.7606
+      },
+      "secondary": [
+        {
+          "center_code": "9001",
+          "center_name": "자양",
+          "count": 3109,
+          "ratio": 0.2394
+        }
+      ]
+    },
+    "자양제2동": {
+      "total": 12823,
+      "is_split": false,
+      "primary": {
+        "center_code": "9004",
+        "center_name": "구의",
+        "count": 12823,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "자양제3동": {
+      "total": 11315,
+      "is_split": false,
+      "primary": {
+        "center_code": "9001",
+        "center_name": "자양",
+        "count": 11315,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "자양제4동": {
+      "total": 16320,
+      "is_split": false,
+      "primary": {
+        "center_code": "9001",
+        "center_name": "자양",
+        "count": 16320,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "장안제1동": {
+      "total": 20855,
+      "is_split": false,
+      "primary": {
+        "center_code": "9018",
+        "center_name": "장안",
+        "count": 20855,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "장안제2동": {
+      "total": 16252,
+      "is_split": false,
+      "primary": {
+        "center_code": "9018",
+        "center_name": "장안",
+        "count": 16252,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "장충동": {
+      "total": 5069,
+      "is_split": false,
+      "primary": {
+        "center_code": "9003",
+        "center_name": "중부",
+        "count": 5069,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "전농제1동": {
+      "total": 18122,
+      "is_split": false,
+      "primary": {
+        "center_code": "9010",
+        "center_name": "제기",
+        "count": 18122,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "전농제2동": {
+      "total": 7888,
+      "is_split": false,
+      "primary": {
+        "center_code": "9002",
+        "center_name": "휘경",
+        "count": 7888,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "정릉제1동": {
+      "total": 7754,
+      "is_split": false,
+      "primary": {
+        "center_code": "9021",
+        "center_name": "정릉",
+        "count": 7754,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "정릉제2동": {
+      "total": 10262,
+      "is_split": false,
+      "primary": {
+        "center_code": "9021",
+        "center_name": "정릉",
+        "count": 10262,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "정릉제3동": {
+      "total": 8657,
+      "is_split": false,
+      "primary": {
+        "center_code": "9021",
+        "center_name": "정릉",
+        "count": 8657,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "정릉제4동": {
+      "total": 11349,
+      "is_split": false,
+      "primary": {
+        "center_code": "9021",
+        "center_name": "정릉",
+        "count": 11349,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "제기동": {
+      "total": 16414,
+      "is_split": false,
+      "primary": {
+        "center_code": "9010",
+        "center_name": "제기",
+        "count": 16414,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "종로1.2.3.4가동": {
+      "total": 7622,
+      "is_split": false,
+      "primary": {
+        "center_code": "9014",
+        "center_name": "종로",
+        "count": 7622,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "종로5.6가동": {
+      "total": 5506,
+      "is_split": false,
+      "primary": {
+        "center_code": "9014",
+        "center_name": "종로",
+        "count": 5506,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "종암동": {
+      "total": 20359,
+      "is_split": false,
+      "primary": {
+        "center_code": "9011",
+        "center_name": "삼선",
+        "count": 20359,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "중곡제1동": {
+      "total": 9706,
+      "is_split": false,
+      "primary": {
+        "center_code": "9012",
+        "center_name": "중곡",
+        "count": 9706,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "중곡제2동": {
+      "total": 11557,
+      "is_split": false,
+      "primary": {
+        "center_code": "9012",
+        "center_name": "중곡",
+        "count": 11557,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "중곡제3동": {
+      "total": 9430,
+      "is_split": false,
+      "primary": {
+        "center_code": "9012",
+        "center_name": "중곡",
+        "count": 9430,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "중곡제4동": {
+      "total": 14266,
+      "is_split": false,
+      "primary": {
+        "center_code": "9012",
+        "center_name": "중곡",
+        "count": 14266,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "중림동": {
+      "total": 6564,
+      "is_split": false,
+      "primary": {
+        "center_code": "9022",
+        "center_name": "서부",
+        "count": 6564,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "중화제1동": {
+      "total": 9156,
+      "is_split": false,
+      "primary": {
+        "center_code": "9013",
+        "center_name": "신내",
+        "count": 9156,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "중화제2동": {
+      "total": 16185,
+      "is_split": true,
+      "primary": {
+        "center_code": "9009",
+        "center_name": "중화",
+        "count": 10605,
+        "ratio": 0.6552
+      },
+      "secondary": [
+        {
+          "center_code": "9019",
+          "center_name": "상봉",
+          "count": 5580,
+          "ratio": 0.3448
+        }
+      ]
+    },
+    "창신제1동": {
+      "total": 3353,
+      "is_split": false,
+      "primary": {
+        "center_code": "9014",
+        "center_name": "종로",
+        "count": 3353,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "창신제2동": {
+      "total": 5215,
+      "is_split": false,
+      "primary": {
+        "center_code": "9014",
+        "center_name": "종로",
+        "count": 5215,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "창신제3동": {
+      "total": 3054,
+      "is_split": false,
+      "primary": {
+        "center_code": "9014",
+        "center_name": "종로",
+        "count": 3054,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "천연동": {
+      "total": 8116,
+      "is_split": false,
+      "primary": {
+        "center_code": "9022",
+        "center_name": "서부",
+        "count": 8116,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "청구동": {
+      "total": 5310,
+      "is_split": false,
+      "primary": {
+        "center_code": "9003",
+        "center_name": "중부",
+        "count": 5310,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "청량리동": {
+      "total": 10571,
+      "is_split": true,
+      "primary": {
+        "center_code": "9002",
+        "center_name": "휘경",
+        "count": 6169,
+        "ratio": 0.5836
+      },
+      "secondary": [
+        {
+          "center_code": "9010",
+          "center_name": "제기",
+          "count": 4402,
+          "ratio": 0.4164
+        }
+      ]
+    },
+    "청운효자동": {
+      "total": 6087,
+      "is_split": false,
+      "primary": {
+        "center_code": "9022",
+        "center_name": "서부",
+        "count": 6087,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "충현동": {
+      "total": 5693,
+      "is_split": false,
+      "primary": {
+        "center_code": "9022",
+        "center_name": "서부",
+        "count": 5693,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "필동": {
+      "total": 3623,
+      "is_split": true,
+      "primary": {
+        "center_code": "9003",
+        "center_name": "중부",
+        "count": 3478,
+        "ratio": 0.96
+      },
+      "secondary": [
+        {
+          "center_code": "9022",
+          "center_name": "서부",
+          "count": 145,
+          "ratio": 0.04
+        }
+      ]
+    },
+    "한강로동": {
+      "total": 1693,
+      "is_split": false,
+      "primary": {
+        "center_code": "9016",
+        "center_name": "용산",
+        "count": 1693,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "한남동": {
+      "total": 9311,
+      "is_split": true,
+      "primary": {
+        "center_code": "9005",
+        "center_name": "금호",
+        "count": 6086,
+        "ratio": 0.6536
+      },
+      "secondary": [
+        {
+          "center_code": "9016",
+          "center_name": "용산",
+          "count": 3225,
+          "ratio": 0.3464
+        }
+      ]
+    },
+    "행당제1동": {
+      "total": 12944,
+      "is_split": false,
+      "primary": {
+        "center_code": "9007",
+        "center_name": "행당",
+        "count": 12944,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "행당제2동": {
+      "total": 9210,
+      "is_split": true,
+      "primary": {
+        "center_code": "9005",
+        "center_name": "금호",
+        "count": 4696,
+        "ratio": 0.5099
+      },
+      "secondary": [
+        {
+          "center_code": "9007",
+          "center_name": "행당",
+          "count": 4514,
+          "ratio": 0.4901
+        }
+      ]
+    },
+    "혜화동": {
+      "total": 12919,
+      "is_split": false,
+      "primary": {
+        "center_code": "9014",
+        "center_name": "종로",
+        "count": 12919,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "화양동": {
+      "total": 24501,
+      "is_split": false,
+      "primary": {
+        "center_code": "9001",
+        "center_name": "자양",
+        "count": 24501,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "황학동": {
+      "total": 9168,
+      "is_split": false,
+      "primary": {
+        "center_code": "9003",
+        "center_name": "중부",
+        "count": 9168,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "회기동": {
+      "total": 9852,
+      "is_split": false,
+      "primary": {
+        "center_code": "9002",
+        "center_name": "휘경",
+        "count": 9852,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "회현동": {
+      "total": 3935,
+      "is_split": false,
+      "primary": {
+        "center_code": "9022",
+        "center_name": "서부",
+        "count": 3935,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "후암동": {
+      "total": 9262,
+      "is_split": false,
+      "primary": {
+        "center_code": "9016",
+        "center_name": "용산",
+        "count": 9262,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "휘경제1동": {
+      "total": 12066,
+      "is_split": false,
+      "primary": {
+        "center_code": "9002",
+        "center_name": "휘경",
+        "count": 12066,
+        "ratio": 1.0
+      },
+      "secondary": []
+    },
+    "휘경제2동": {
+      "total": 14408,
+      "is_split": false,
+      "primary": {
+        "center_code": "9002",
+        "center_name": "휘경",
+        "count": 14408,
+        "ratio": 1.0
+      },
+      "secondary": []
+    }
+  }
+}
