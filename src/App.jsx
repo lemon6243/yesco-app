@@ -4,7 +4,8 @@ import ControlPanel from "./components/ControlPanel";
 import ControlPanelV2 from "./components/ControlPanelV2";
 import ZonePanel from "./components/ZonePanel";
 import HelpModal from "./components/HelpModal";
-import { useAppStore } from "./store/useAppStore";
+import useAppStore from "./store/useAppStore";
+
 
 const FIRST_VISIT_KEY = "yesco_help_seen_v1";
 
