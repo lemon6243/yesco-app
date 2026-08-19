@@ -9,7 +9,8 @@ import { useAdjacencyMap } from "../utils/dataLoader";
 import { useV2Data } from "../utils/dataLoaderV2";
 import { checkAdjacency, checkDowntown } from "../utils/validator";
 import { exportZonesCSV } from "../utils/scenarioManager";
-import CenterAllocationPanel from "./CenterAllocationPanel";
+import CenterAllocationCard from "./CenterAllocationPanel";
+
 
 
 
