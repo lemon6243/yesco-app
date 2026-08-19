@@ -55,14 +55,13 @@ export function calculateZoneStats(
 
     if (p.is_downtown) target.도심권개수 += 1;
 
-        const ops = String(p.운영센터 ?? p.주센터번호 ?? "")
+    const ops = String(p.운영센터 ?? p.주센터번호 ?? "")
       .split(/[+,]/)
       .map((s) => s.trim())
       .filter(Boolean);
     ops.forEach((o) => target.운영센터집합.add(o));
 
-    // ── 추가: 이 동의 세대수를 원래 소속 센터에 귀속 ──
-    // 복합센터(예: "9001+9004")면 세대수를 균등 분배
+    // ── 이 동의 세대수를 원래 소속 센터에 귀속 (복합센터는 균등 분배) ──
     const 동합계 = 단독 + 공동 + 영업;
     if (ops.length > 0 && 동합계 > 0) {
       const share = 동합계 / ops.length;
@@ -70,7 +69,7 @@ export function calculateZoneStats(
         target.센터별세대수[o] = (target.센터별세대수[o] ?? 0) + share;
       });
     }
-
+  });
 
   // 후처리: Set → 배열 / 법적인원 산출
   Object.values(stats).forEach(finalizeZone);
@@ -92,7 +91,7 @@ function makeEmptyZone(zoneIdx) {
     도심권개수: 0,
     입주예정합산: 0,
     운영센터집합: new Set(),
-    센터별세대수: {},   // ← 추가: { [centerCode]: 세대수합 }
+    센터별세대수: {}, // { [centerCode]: 세대수합 }
   };
 }
 
@@ -107,7 +106,7 @@ function getMoveInSum(dongName, moveInData, selectedYears) {
 }
 
 /**
- * 권역 마무리: 운영센터 배열화 + 사무행정/법적인원 산출
+ * 권역 마무리: 운영센터 배열화 + 사무행정/법적인원 산출 + 센터 구성/추천
  */
 function finalizeZone(s) {
   s.운영센터 = Array.from(s.운영센터집합).sort();
@@ -123,7 +122,10 @@ function finalizeZone(s) {
   s.법적영업 = Math.ceil(s.영업 / r.영업);
   s.법적인원 = s.법적단독 + s.법적공동 + s.법적영업;
 
-    // ── 추가: 센터별 비율 + 배치 추천 센터장 ──
+  // 사무행정 인원 (라운드업)
+  s.사무행정인원 = s.합계 > 0 ? Math.ceil(s.합계 / STAFFING_RULES.office) : 0;
+
+  // ── 센터별 비율 + 배치 추천 센터장 ──
   const 센터항목 = Object.entries(s.센터별세대수)
     .map(([code, hh]) => ({ code, 세대수: Math.round(hh) }))
     .sort((a, b) => b.세대수 - a.세대수);
@@ -135,10 +137,6 @@ function finalizeZone(s) {
   }));
   s.추천센터장 = 센터항목.length > 0 ? 센터항목[0].code : null;
   s.추천비율 = 총 > 0 && 센터항목.length > 0 ? 센터항목[0].세대수 / 총 : 0;
-
-
-  // 사무행정 인원 (라운드업)
-  s.사무행정인원 = s.합계 > 0 ? Math.ceil(s.합계 / STAFFING_RULES.office) : 0;
 }
 
 // 권역 라벨 자동 생성 (예: "9001+9004 통합")
