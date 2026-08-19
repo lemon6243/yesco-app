@@ -1,3 +1,5 @@
+import { getCenterName } from "./centerNames";
+
 // 시나리오 JSON 저장 (다운로드)
 export function exportScenario(state) {
   const data = {
@@ -55,23 +57,42 @@ export function exportZonesCSV(zones, getZoneLabel) {
     "합계",
     "난이도점수",
     "상담원수",
+    "추천센터장코드",
+    "추천센터장이름",
+    "추천센터장비율(%)",
+    "센터별구성",
     "행정동목록",
   ];
 
-  const rows = Object.values(zones).map((z) => [
-    z.zone,
-    getZoneLabel(z),
-    z.dongCount,
-    z.도심권개수,
-    z.운영센터.join("+"),
-    z.단독,
-    z.공동,
-    z.영업,
-    z.합계,
-    Math.round(z.난이도점수),
-    z.상담원수.toFixed(2),
-    z.dongs.join("·"),
-  ]);
+  const rows = Object.values(zones).map((z) => {
+    // 센터별 구성 문자열: "9014 종로 68.2% / 9022 서부 31.8%"
+    const 구성 = z.센터구성 ?? [];
+    const 센터별구성 = 구성
+      .map(
+        (c) =>
+          `${c.code} ${getCenterName(c.code)} ${(c.비율 * 100).toFixed(1)}%`
+      )
+      .join(" / ");
+
+    return [
+      z.zone,
+      getZoneLabel(z),
+      z.dongCount,
+      z.도심권개수,
+      z.운영센터.join("+"),
+      z.단독,
+      z.공동,
+      z.영업,
+      z.합계,
+      Math.round(z.난이도점수),
+      z.상담원수.toFixed(2),
+      z.추천센터장 ?? "",
+      z.추천센터장 ? getCenterName(z.추천센터장) : "",
+      z.추천비율 ? (z.추천비율 * 100).toFixed(1) : "",
+      센터별구성,
+      z.dongs.join("·"),
+    ];
+  });
 
   const csv = [headers, ...rows]
     .map((row) =>
@@ -101,3 +122,4 @@ export function exportZonesCSV(zones, getZoneLabel) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
