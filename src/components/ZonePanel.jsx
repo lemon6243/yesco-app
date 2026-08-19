@@ -9,6 +9,8 @@ import { useAdjacencyMap } from "../utils/dataLoader";
 import { useV2Data } from "../utils/dataLoaderV2";
 import { checkAdjacency, checkDowntown } from "../utils/validator";
 import { exportZonesCSV } from "../utils/scenarioManager";
+import CenterAllocationCard from "./CenterAllocationCard";
+
 
 export default function ZonePanel({ geoData }) {
   const appMode = useAppStore((s) => s.appMode);
@@ -313,6 +315,10 @@ export default function ZonePanel({ geoData }) {
                   )}
                 </div>
               )}
+
+              {/* 센터장 배치 추천 (V1에서만, 또는 항상) */}
+              {!isV2 && <CenterAllocationCard zone={z} />}
+
 
               {adj.components > 1 && (
                 <div className="text-red-600 font-semibold mt-1">
