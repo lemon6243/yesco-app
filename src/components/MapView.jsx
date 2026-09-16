@@ -7,6 +7,8 @@ import useAppStore, { ZONE_COLORS } from "../store/useAppStore";
 import { useAdjacencyMap } from "../utils/dataLoader";
 import { useV2Data } from "../utils/dataLoaderV2";
 import { checkAdjacency } from "../utils/validator";
+import { calculateZoneStats } from "../utils/zoneCalculator";
+import { calculateZoneStatsV2 } from "../utils/zoneCalculatorV2";
 import {
   getSplitDongFill,
   formatSplitLabel,
@@ -95,13 +97,57 @@ export default function MapView({ onDataLoaded }) {
   const showZoneOverviewLabels = useAppStore((s) => s.showZoneOverviewLabels);
   const focusedZone = useAppStore((s) => s.focusedZone);
 
+  // 입주예정 및 가중치 데이터 (우측 권역 패널과 100% 동일한 수치 연동)
+  const moveInData = useAppStore((s) => s.moveInData);
+  const selectedMoveInYears = useAppStore((s) => s.selectedMoveInYears);
+  const weights = useAppStore((s) => s.weights);
+  const meterGradeWeights = useAppStore((s) => s.meterGradeWeights);
+
   const adjacencyMap = useAdjacencyMap();
   // V2 데이터는 모든 모드에서 백그라운드 로딩 (전환 시 즉시 사용 가능)
   const { metersByGrade, splitInfo } = useV2Data();
 
   const isV2 = appMode === "v2";
 
-  // 확정된 권역별 중심 좌표 및 요약 정보 계산
+  // 우측 패널(ZonePanel)과 완전히 동일한 로직으로 각 권역별 세대수 및 입주예정 합산 통계 산출
+  const zoneStats = useMemo(() => {
+    const commonOpts = {
+      moveInData,
+      selectedMoveInYears,
+    };
+    if (isV2) {
+      if (!metersByGrade) return null;
+      return calculateZoneStatsV2(
+        metersByGrade,
+        splitInfo,
+        dongAssignments,
+        zoneCount,
+        meterGradeWeights,
+        commonOpts
+      ).zones;
+    }
+    if (!geoData?.features) return null;
+    return calculateZoneStats(
+      geoData.features,
+      dongAssignments,
+      zoneCount,
+      weights,
+      commonOpts
+    ).zones;
+  }, [
+    isV2,
+    geoData,
+    metersByGrade,
+    splitInfo,
+    dongAssignments,
+    zoneCount,
+    weights,
+    meterGradeWeights,
+    moveInData,
+    selectedMoveInYears,
+  ]);
+
+  // 확정된 권역별 중심 좌표 및 요약 정보 계산 (입주예정 반영 합계 세대수 적용)
   const confirmedZoneOverviews = useMemo(() => {
     if (!geoData?.features) return [];
     const zones = [];
@@ -113,8 +159,10 @@ export default function MapView({ onDataLoaded }) {
 
       let sumLat = 0;
       let sumLng = 0;
-      let totalH = 0;
-      let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+      let minLat = 90,
+        maxLat = -90,
+        minLng = 180,
+        maxLng = -180;
       const centerFrequencies = {};
 
       zFeatures.forEach((f) => {
@@ -127,7 +175,6 @@ export default function MapView({ onDataLoaded }) {
           if (c[1] < minLng) minLng = c[1];
           if (c[1] > maxLng) maxLng = c[1];
         }
-        totalH += f.properties.합계 ?? 0;
         const cName = f.properties.주센터명 || f.properties.주센터번호;
         if (cName) {
           centerFrequencies[cName] = (centerFrequencies[cName] || 0) + 1;
@@ -140,17 +187,30 @@ export default function MapView({ onDataLoaded }) {
         .slice(0, 2)
         .join("·");
 
+      // 우측 슬라이드 패널의 세대수 합계(입주예정 합산 포함)와 정확히 일치하도록 연동
+      const zStat = zoneStats?.[z];
+      const totalH = zStat
+        ? isV2
+          ? zStat.총수용가수 ?? 0
+          : zStat.합계 ?? 0
+        : zFeatures.reduce((sum, f) => sum + (f.properties.합계 ?? 0), 0);
+      const moveInSum = zStat?.입주예정합산 ?? 0;
+
       zones.push({
         zone: z,
         center: [sumLat / zFeatures.length, sumLng / zFeatures.length],
-        bounds: [[minLat, minLng], [maxLat, maxLng]],
+        bounds: [
+          [minLat, minLng],
+          [maxLat, maxLng],
+        ],
         dongCount: zFeatures.length,
         totalHouseholds: totalH,
+        moveIn: moveInSum,
         topCenters: topCenters || `${zFeatures.length}개동`,
       });
     }
     return zones;
-  }, [geoData, dongAssignments, zoneCount]);
+  }, [geoData, dongAssignments, zoneCount, zoneStats, isV2]);
 
   const isolatedDongs = useMemo(() => {
     if (!Object.keys(adjacencyMap).length) return new Set();
@@ -179,8 +239,20 @@ export default function MapView({ onDataLoaded }) {
     () =>
       `${appMode}-${viewMode}-${selectedZone}-${isZoneConfirmed}-${JSON.stringify(
         dongAssignments
-      )}-${isolatedDongs.size}-${showSplitHatch}-${splitInfo ? "s" : "n"}`,
-    [appMode, viewMode, selectedZone, isZoneConfirmed, dongAssignments, isolatedDongs, showSplitHatch, splitInfo]
+      )}-${isolatedDongs.size}-${showSplitHatch}-${splitInfo ? "s" : "n"}-${selectedMoveInYears.join(
+        ","
+      )}`,
+    [
+      appMode,
+      viewMode,
+      selectedZone,
+      isZoneConfirmed,
+      dongAssignments,
+      isolatedDongs,
+      showSplitHatch,
+      splitInfo,
+      selectedMoveInYears,
+    ]
   );
 
   const styleFn = (feature) => {
@@ -520,7 +592,11 @@ function ZoneOverviewMarker({ zoneData, isSelected, onClick }) {
             <div style="font-size: 11px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
               ${zoneData.topCenters}
             </div>
-            <div style="font-size: 10px; color: #64748b; margin-top: 1px; font-weight: 500;">
+            <div title="총 ${zoneData.totalHouseholds.toLocaleString()}세대${
+              zoneData.moveIn > 0
+                ? ` (입주예정 +${zoneData.moveIn.toLocaleString()} 반영)`
+                : ""
+            }" style="font-size: 10px; color: #64748b; margin-top: 1px; font-weight: 500;">
               ${zoneData.dongCount}개동 · <b>${householdsK}만</b>
             </div>
           </div>
