@@ -1,5 +1,3 @@
-import L from "leaflet";
-
 /**
  * 분할동 빗금 패턴 SVG를 Leaflet 지도에 주입
  *

@@ -24,8 +24,6 @@ export function useV2Data() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
 
     Promise.all([
       fetch("/data/dongs_meters_by_grade.csv").then((r) => {

@@ -35,7 +35,7 @@ export const STAFFING_RULES = {
 // 입주예정 연도 옵션 (누적형)
 export const MOVE_IN_YEARS = [2026, 2027, 2028, 2029, 2030];
 
-const useAppStore = create((set, get) => ({
+const useAppStore = create((set) => ({
   // ────────────────────────────────────────────────────────
   // V1/V2 모드 토글
   // ────────────────────────────────────────────────────────
@@ -90,6 +90,22 @@ const useAppStore = create((set, get) => ({
   setShowLabels: (v) => set({ showLabels: v }),
   labelType: "name",
   setLabelType: (t) => set({ labelType: t }),
+
+  // ────────────────────────────────────────────────────────
+  // 권역 확정 상태 (지도 대형 라벨링 및 배정 확정 모드)
+  // ────────────────────────────────────────────────────────
+  isZoneConfirmed: false,
+  setIsZoneConfirmed: (v) => set({ isZoneConfirmed: v }),
+  toggleZoneConfirmed: () =>
+    set((state) => ({ isZoneConfirmed: !state.isZoneConfirmed })),
+
+  // 지도 특정 권역 포커스
+  focusedZone: null,
+  setFocusedZone: (z) => set({ focusedZone: z }),
+
+  // 권역 라벨 항상 표시 (확정 전에도 큰 권역 라벨 보기)
+  showZoneOverviewLabels: false,
+  setShowZoneOverviewLabels: (v) => set({ showZoneOverviewLabels: v }),
 
   // ────────────────────────────────────────────────────────
   // V2 신규 상태

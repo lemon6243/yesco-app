@@ -85,15 +85,72 @@ export default function MapView({ onDataLoaded }) {
   const dongAssignments = useAppStore((s) => s.dongAssignments);
   const zoneCount = useAppStore((s) => s.zoneCount);
   const selectedZone = useAppStore((s) => s.selectedZone);
+  const setSelectedZone = useAppStore((s) => s.setSelectedZone);
   const showLabels = useAppStore((s) => s.showLabels);
   const labelType = useAppStore((s) => s.labelType);
   const showSplitHatch = useAppStore((s) => s.showSplitHatch);
+
+  const isZoneConfirmed = useAppStore((s) => s.isZoneConfirmed);
+  const toggleZoneConfirmed = useAppStore((s) => s.toggleZoneConfirmed);
+  const showZoneOverviewLabels = useAppStore((s) => s.showZoneOverviewLabels);
+  const focusedZone = useAppStore((s) => s.focusedZone);
 
   const adjacencyMap = useAdjacencyMap();
   // V2 데이터는 모든 모드에서 백그라운드 로딩 (전환 시 즉시 사용 가능)
   const { metersByGrade, splitInfo } = useV2Data();
 
   const isV2 = appMode === "v2";
+
+  // 확정된 권역별 중심 좌표 및 요약 정보 계산
+  const confirmedZoneOverviews = useMemo(() => {
+    if (!geoData?.features) return [];
+    const zones = [];
+    for (let z = 1; z <= zoneCount; z++) {
+      const zFeatures = geoData.features.filter(
+        (f) => dongAssignments[f.properties.행정동] === z
+      );
+      if (zFeatures.length === 0) continue;
+
+      let sumLat = 0;
+      let sumLng = 0;
+      let totalH = 0;
+      let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+      const centerFrequencies = {};
+
+      zFeatures.forEach((f) => {
+        const c = getPolygonCenter(f.geometry);
+        if (c) {
+          sumLat += c[0];
+          sumLng += c[1];
+          if (c[0] < minLat) minLat = c[0];
+          if (c[0] > maxLat) maxLat = c[0];
+          if (c[1] < minLng) minLng = c[1];
+          if (c[1] > maxLng) maxLng = c[1];
+        }
+        totalH += f.properties.합계 ?? 0;
+        const cName = f.properties.주센터명 || f.properties.주센터번호;
+        if (cName) {
+          centerFrequencies[cName] = (centerFrequencies[cName] || 0) + 1;
+        }
+      });
+
+      const topCenters = Object.entries(centerFrequencies)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name]) => name)
+        .slice(0, 2)
+        .join("·");
+
+      zones.push({
+        zone: z,
+        center: [sumLat / zFeatures.length, sumLng / zFeatures.length],
+        bounds: [[minLat, minLng], [maxLat, maxLng]],
+        dongCount: zFeatures.length,
+        totalHouseholds: totalH,
+        topCenters: topCenters || `${zFeatures.length}개동`,
+      });
+    }
+    return zones;
+  }, [geoData, dongAssignments, zoneCount]);
 
   const isolatedDongs = useMemo(() => {
     if (!Object.keys(adjacencyMap).length) return new Set();
@@ -120,10 +177,10 @@ export default function MapView({ onDataLoaded }) {
 
   const geoKey = useMemo(
     () =>
-      `${appMode}-${viewMode}-${selectedZone}-${JSON.stringify(
+      `${appMode}-${viewMode}-${selectedZone}-${isZoneConfirmed}-${JSON.stringify(
         dongAssignments
       )}-${isolatedDongs.size}-${showSplitHatch}-${splitInfo ? "s" : "n"}`,
-    [appMode, viewMode, selectedZone, dongAssignments, isolatedDongs, showSplitHatch, splitInfo]
+    [appMode, viewMode, selectedZone, isZoneConfirmed, dongAssignments, isolatedDongs, showSplitHatch, splitInfo]
   );
 
   const styleFn = (feature) => {
@@ -138,7 +195,13 @@ export default function MapView({ onDataLoaded }) {
     const sInfo = splitInfo?.[name];
     const isSplitDong = isV2 && showSplitHatch && sInfo?.is_split;
 
-    if (viewMode === "center") {
+    if (isZoneConfirmed) {
+      // 권역 확정 모드: 권역별 색상으로 확정 지도 표현
+      fillColor = assignedZone
+        ? ZONE_COLORS[(assignedZone - 1) % ZONE_COLORS.length]
+        : "#cbd5e1";
+      fillOpacity = assignedZone ? 0.75 : 0.25;
+    } else if (viewMode === "center") {
       if (isSplitDong && !assignedZone) {
         // 분할동: 빗금 패턴 적용 (URL 문자열은 미리 주입됨)
         fillColor = makeSplitFillUrl(sInfo);
@@ -171,12 +234,12 @@ export default function MapView({ onDataLoaded }) {
 
     return {
       fillColor,
-      weight: isolated ? 3 : isSelectedZone ? 3 : 1,
+      weight: isolated ? 3 : isSelectedZone ? 3.5 : isZoneConfirmed ? 1.5 : 1,
       opacity: 1,
-      color: isolated ? "#dc2626" : isSelectedZone ? "#000" : "#333",
+      color: isolated ? "#dc2626" : isSelectedZone ? "#1e3a8a" : isZoneConfirmed ? "#334155" : "#333",
       dashArray: isolated ? "4,3" : "",
       fillOpacity: isSelectedZone
-        ? Math.min(fillOpacity + 0.15, 0.9)
+        ? Math.min(fillOpacity + 0.15, 0.92)
         : fillOpacity,
     };
   };
@@ -302,6 +365,10 @@ export default function MapView({ onDataLoaded }) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <ZoomWatcher onZoomChange={setCurrentZoom} />
+      <FocusedZoneController
+        focusedZone={focusedZone}
+        confirmedZoneOverviews={confirmedZoneOverviews}
+      />
       {isV2 && splitInfo && <SplitPatternInjector splitInfo={splitInfo} />}
       {geoData && (
         <GeoJSON
@@ -311,16 +378,60 @@ export default function MapView({ onDataLoaded }) {
           onEachFeature={onEachFeature}
         />
       )}
+
+      {/* 권역 확정 또는 권역 개요 라벨 (확정 시 또는 상시 보기 옵션 켰을 때 표시) */}
+      {(isZoneConfirmed || showZoneOverviewLabels) &&
+        confirmedZoneOverviews.map((zo) => (
+          <ZoneOverviewMarker
+            key={`zone-marker-${zo.zone}`}
+            zoneData={zo}
+            isSelected={selectedZone === zo.zone}
+            onClick={(z) => setSelectedZone(z)}
+          />
+        ))}
+
+      {/* 동별 상세 라벨 (줌 12 이상일 때) */}
       {showLabelsNow &&
         labelData.map((item, i) => (
           <LabelMarker key={item.name + i} item={item} />
         ))}
+
+      {/* 상단 확정 모드 안내 배너 */}
+      {isZoneConfirmed ? (
+        <div
+          className="absolute top-3 left-1/2 -translate-x-1/2 bg-emerald-800/90 hover:bg-emerald-800 backdrop-blur-sm text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2.5 border border-emerald-400 z-[1000] transition"
+        >
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+            <span>🔒 <b>권역 확정됨</b> (지도에 권역별 통합 라벨링 표기 중)</span>
+          </span>
+          <button
+            onClick={toggleZoneConfirmed}
+            className="bg-white/20 hover:bg-white/30 active:scale-95 px-2 py-0.5 rounded text-[11px] font-medium transition cursor-pointer"
+          >
+            수정 모드로 전환
+          </button>
+        </div>
+      ) : confirmedZoneOverviews.length > 0 ? (
+        <div
+          className="absolute top-3 left-1/2 -translate-x-1/2 bg-slate-900/80 hover:bg-slate-900 backdrop-blur-sm text-slate-100 text-xs px-3.5 py-1.5 rounded-full shadow-md flex items-center gap-2 border border-slate-700 z-[1000] transition"
+        >
+          <span>시뮬레이션 배정 중 ({Object.keys(dongAssignments).length}개동 할당)</span>
+          <button
+            onClick={toggleZoneConfirmed}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2.5 py-0.5 rounded text-[11px] transition shadow cursor-pointer"
+          >
+            🔒 권역 확정
+          </button>
+        </div>
+      ) : null}
+
       {showLabels && currentZoom < LABEL_MIN_ZOOM && (
         <div
           className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs px-3 py-1 rounded"
           style={{ zIndex: 1000 }}
         >
-          🔍 줌을 더 확대하면 라벨이 표시됩니다 (현재 {currentZoom} / 필요{" "}
+          🔍 줌을 더 확대하면 행정동 상세 라벨이 표시됩니다 (현재 {currentZoom} / 필요{" "}
           {LABEL_MIN_ZOOM})
         </div>
       )}
@@ -334,6 +445,106 @@ export default function MapView({ onDataLoaded }) {
       )}
     </MapContainer>
   );
+}
+
+// ──────────────────────────────────────────────────────────
+// 특정 권역 포커스 (지도 뷰 부드럽게 이동)
+// ──────────────────────────────────────────────────────────
+function FocusedZoneController({ focusedZone, confirmedZoneOverviews }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!focusedZone) return;
+    const target = confirmedZoneOverviews.find((zo) => zo.zone === focusedZone);
+    if (target && target.bounds && target.bounds[0][0] <= target.bounds[1][0]) {
+      map.fitBounds(target.bounds, {
+        padding: [50, 50],
+        maxZoom: 13,
+        animate: true,
+      });
+    }
+  }, [focusedZone, confirmedZoneOverviews, map]);
+  return null;
+}
+
+// ──────────────────────────────────────────────────────────
+// 지도 권역 대형 라벨 마커 (1권역, 2권역 등 한눈에 파악)
+// ──────────────────────────────────────────────────────────
+function ZoneOverviewMarker({ zoneData, isSelected, onClick }) {
+  const map = useMap();
+  useEffect(() => {
+    const color = ZONE_COLORS[(zoneData.zone - 1) % ZONE_COLORS.length];
+    const householdsK = (zoneData.totalHouseholds / 10000).toFixed(1);
+
+    const icon = L.divIcon({
+      className: "zone-overview-card",
+      html: `
+        <div id="map-zone-badge-${zoneData.zone}" class="zone-overview-card ${
+          isSelected ? "is-selected zone-pulse-active" : ""
+        }" style="
+          background: #ffffff;
+          border-radius: 10px;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.28), 0 0 0 ${
+            isSelected ? "3.5px #1d4ed8" : "1.5px rgba(0,0,0,0.18)"
+          };
+          overflow: hidden;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          min-width: 108px;
+          max-width: 140px;
+          text-align: center;
+          cursor: pointer;
+        ">
+          <div style="
+            background: ${color};
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 800;
+            padding: 5px 8px 4px;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+          ">
+            <span>${zoneData.zone} 권역</span>
+            ${
+              isSelected
+                ? '<span style="font-size:9px;background:rgba(255,255,255,0.35);padding:1px 4px;border-radius:3px;font-weight:700;">선택</span>'
+                : ""
+            }
+          </div>
+          <div style="
+            padding: 4px 7px 5px;
+            background: #ffffff;
+          ">
+            <div style="font-size: 11px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              ${zoneData.topCenters}
+            </div>
+            <div style="font-size: 10px; color: #64748b; margin-top: 1px; font-weight: 500;">
+              ${zoneData.dongCount}개동 · <b>${householdsK}만</b>
+            </div>
+          </div>
+        </div>
+      `,
+      iconSize: [0, 0],
+    });
+
+    const marker = L.marker(zoneData.center, {
+      icon,
+      zIndexOffset: isSelected ? 3500 : 1500,
+    }).addTo(map);
+
+    marker.on("click", (e) => {
+      L.DomEvent.stopPropagation(e);
+      onClick(zoneData.zone);
+    });
+
+    return () => {
+      map.removeLayer(marker);
+    };
+  }, [map, zoneData, isSelected, onClick]);
+
+  return null;
 }
 
 function LabelMarker({ item }) {

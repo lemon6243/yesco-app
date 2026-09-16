@@ -2,6 +2,7 @@ import { useRef } from "react";
 import useAppStore, { ZONE_COLORS, MOVE_IN_YEARS } from "../store/useAppStore";
 import { exportScenario, importScenario } from "../utils/scenarioManager";
 import { useAdjacencyMap } from "../utils/dataLoader";
+import { useV2Data } from "../utils/dataLoaderV2";
 import { autoAssignZones } from "../utils/autoAssign";
 import SelectedZoneInfo from "./SelectedZoneInfo";
 
@@ -9,6 +10,7 @@ import SelectedZoneInfo from "./SelectedZoneInfo";
 export default function ControlPanel({ geoData }) {
   const fileInputRef = useRef(null);
   const adjacency = useAdjacencyMap();
+  const { metersByGrade } = useV2Data();
 
   const zoneCount = useAppStore((s) => s.zoneCount);
   const setZoneCount = useAppStore((s) => s.setZoneCount);
@@ -26,6 +28,12 @@ export default function ControlPanel({ geoData }) {
   const setShowLabels = useAppStore((s) => s.setShowLabels);
   const labelType = useAppStore((s) => s.labelType);
   const setLabelType = useAppStore((s) => s.setLabelType);
+
+  const isZoneConfirmed = useAppStore((s) => s.isZoneConfirmed);
+  const toggleZoneConfirmed = useAppStore((s) => s.toggleZoneConfirmed);
+  const showZoneOverviewLabels = useAppStore((s) => s.showZoneOverviewLabels);
+  const setShowZoneOverviewLabels = useAppStore((s) => s.setShowZoneOverviewLabels);
+  const meterGradeWeights = useAppStore((s) => s.meterGradeWeights);
 
   // 입주예정 토글
   const moveInData = useAppStore((s) => s.moveInData);
@@ -72,19 +80,40 @@ export default function ControlPanel({ geoData }) {
 
   const handleAutoAssignAll = () => {
     if (!canAutoAssign()) return;
-    if (!confirm(
-      `${zoneCount}개 권역으로 전체 자동 배정하시겠습니까?\n` +
-      `현재 수동 할당은 모두 초기화됩니다.`
-    )) return;
+    if (
+      !confirm(
+        `${zoneCount}개 권역으로 전체 자동 배정을 실행하시겠습니까?\n\n` +
+        `• 세대수/검침공수 및 난이도 균등 배분\n` +
+        `• 지리적 인접성 및 100% 단일 연결 보장 (고립동 없음)\n` +
+        `• 도심권 동 균등 분산\n\n` +
+        `※ 기존 수동 할당은 모두 초기화됩니다.`
+      )
+    )
+      return;
+
     try {
       const result = autoAssignZones(
         geoData.features,
         adjacency,
         zoneCount,
         weights,
-        { fixedAssignments: {} }
+        {
+          fixedAssignments: {},
+          isV2: appMode === "v2",
+          metersByGrade,
+          meterGradeWeights,
+          moveInData,
+          selectedMoveInYears,
+          balanceDowntown: true,
+        }
       );
       setAllAssignments(result);
+      const assignedCount = Object.keys(result).length;
+      alert(
+        `✅ 전체 ${assignedCount}개 행정동이 ${zoneCount}개 권역으로 균등하게 자동 배정되었습니다!\n\n` +
+        `• 인접성 100% 충족 (고립동 0건)\n` +
+        `• '권역 확정' 버튼을 누르면 지도에 1~${zoneCount} 권역 대형 라벨이 표시됩니다.`
+      );
     } catch (err) {
       alert("자동 배정 실패: " + err.message);
       console.error(err);
@@ -94,25 +123,49 @@ export default function ControlPanel({ geoData }) {
   const handleAutoFillRest = () => {
     if (!canAutoAssign()) return;
     const assignedCount = Object.keys(dongAssignments).length;
-    if (assignedCount === 0) {
-      if (!confirm("현재 수동 할당이 없습니다. 전체 자동 배정과 동일하게 진행할까요?")) return;
-    } else {
-      if (!confirm(
-        `현재 수동 할당된 ${assignedCount}개 동은 그대로 유지하고,\n` +
-        `나머지 미할당 동만 자동으로 채웁니다. 진행할까요?`
-      )) return;
+    const totalDongs = geoData.features.length;
+    const unassignedCount = totalDongs - assignedCount;
+
+    if (unassignedCount <= 0) {
+      alert("이미 모든 행정동이 배정되어 있습니다.");
+      return;
     }
+
+    if (assignedCount === 0) {
+      if (!confirm("현재 수동 할당된 동이 없습니다. 전체 자동 배정으로 진행할까요?"))
+        return;
+    } else {
+      if (
+        !confirm(
+          `현재 할당된 [${assignedCount}개 동]은 그대로 유지하고,\n` +
+          `나머지 미할당 [${unassignedCount}개 동]만 인접 권역으로 균등하게 채웁니다.\n\n진행하시겠습니까?`
+        )
+      )
+        return;
+    }
+
     try {
       const result = autoAssignZones(
         geoData.features,
         adjacency,
         zoneCount,
         weights,
-        { fixedAssignments: dongAssignments }
+        {
+          fixedAssignments: dongAssignments,
+          isV2: appMode === "v2",
+          metersByGrade,
+          meterGradeWeights,
+          moveInData,
+          selectedMoveInYears,
+          balanceDowntown: true,
+        }
       );
       setAllAssignments(result);
+      alert(
+        `✅ 기존 ${assignedCount}개 동을 보존하고, 나머지 ${unassignedCount}개 미할당 동을 인접 권역에 균등 배정했습니다!`
+      );
     } catch (err) {
-      alert("자동 배정 실패: " + err.message);
+      alert("미할당 동 채우기 실패: " + err.message);
       console.error(err);
     }
   };
@@ -178,14 +231,14 @@ export default function ControlPanel({ geoData }) {
       <section>
         <div className="font-semibold mb-1">권역 개수</div>
         <div className="flex gap-1">
-          {[9, 10, 11, 12].map((n) => (
+          {[8, 9, 10, 11, 12].map((n) => (
             <button
               key={n}
               onClick={() => setZoneCount(n)}
-              className={`flex-1 px-2 py-1 rounded border ${
+              className={`flex-1 px-2 py-1 rounded border text-xs font-semibold ${
                 zoneCount === n
                   ? "bg-green-600 text-white border-green-600"
-                  : "bg-white border-gray-300"
+                  : "bg-white border-gray-300 hover:bg-gray-50"
               }`}
             >
               {n}개
@@ -194,23 +247,72 @@ export default function ControlPanel({ geoData }) {
         </div>
       </section>
 
+      {/* 권역 확정 및 지도 라벨링 */}
+      <section className="p-3 rounded-lg border bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-300 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="font-bold text-emerald-950 flex items-center gap-1.5 text-xs">
+            <span>{isZoneConfirmed ? "🔒" : "⚡"}</span>
+            <span>권역 확정 관리</span>
+          </div>
+          <span
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              isZoneConfirmed
+                ? "bg-emerald-600 text-white"
+                : "bg-emerald-200 text-emerald-800"
+            }`}
+          >
+            {isZoneConfirmed ? "확정됨 (라벨링 활성)" : "시뮬레이션 중"}
+          </span>
+        </div>
+
+        <button
+          onClick={toggleZoneConfirmed}
+          className={`w-full py-2 px-3 rounded font-bold text-xs shadow transition cursor-pointer flex items-center justify-center gap-1.5 ${
+            isZoneConfirmed
+              ? "bg-slate-700 hover:bg-slate-800 text-white"
+              : "bg-emerald-600 hover:bg-emerald-700 text-white"
+          }`}
+        >
+          {isZoneConfirmed ? (
+            <>
+              <span>🔓 권역 확정 해제 (수정 모드)</span>
+            </>
+          ) : (
+            <>
+              <span>🔒 권역 확정 (지도에 1~{zoneCount}권역 라벨 표기)</span>
+            </>
+          )}
+        </button>
+
+        <label className="flex items-center gap-2 text-[11px] text-emerald-900 cursor-pointer pt-0.5">
+          <input
+            type="checkbox"
+            checked={showZoneOverviewLabels || isZoneConfirmed}
+            onChange={(e) => setShowZoneOverviewLabels(e.target.checked)}
+            disabled={isZoneConfirmed}
+            className="rounded text-emerald-600 focus:ring-emerald-500"
+          />
+          <span>지도에 1~{zoneCount} 권역 대형 라벨 상시 표시</span>
+        </label>
+      </section>
+
       {/* 자동 배정 */}
-      <section className="space-y-1">
+      <section className="space-y-1.5">
         <div className="font-semibold mb-1">🤖 자동 권역 배정</div>
         <button
           onClick={handleAutoAssignAll}
-          className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 font-semibold"
+          className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 font-semibold text-xs shadow transition"
         >
           전체 자동 배정
         </button>
         <button
           onClick={handleAutoFillRest}
-          className="w-full bg-purple-400 text-white py-1.5 rounded hover:bg-purple-500 text-xs"
+          className="w-full bg-purple-500 text-white py-1.5 rounded hover:bg-purple-600 text-xs font-medium shadow transition"
         >
-          미할당 동만 자동 채우기
+          미할당 동만 자동 채우기 (기존 할당 유지)
         </button>
-        <div className="text-[10px] text-gray-500 mt-1">
-          인접성·난이도 균형·도심권 분산 기준으로 배정
+        <div className="text-[10px] text-gray-500 mt-0.5">
+          지리적 인접성 100%·업무량 균형·도심권 분산 기준으로 배정
         </div>
       </section>
 

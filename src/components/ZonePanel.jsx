@@ -24,6 +24,11 @@ export default function ZonePanel({ geoData }) {
   const targetMax = useAppStore((s) => s.targetMax);
   const v2TargetMin = useAppStore((s) => s.v2TargetMin);
   const v2TargetMax = useAppStore((s) => s.v2TargetMax);
+  const selectedZone = useAppStore((s) => s.selectedZone);
+  const setSelectedZone = useAppStore((s) => s.setSelectedZone);
+  const setFocusedZone = useAppStore((s) => s.setFocusedZone);
+  const isZoneConfirmed = useAppStore((s) => s.isZoneConfirmed);
+  const toggleZoneConfirmed = useAppStore((s) => s.toggleZoneConfirmed);
 
   // 입주예정 + 법적인원 관련
   const moveInData = useAppStore((s) => s.moveInData);
@@ -160,10 +165,54 @@ export default function ZonePanel({ geoData }) {
         </h2>
         <button
           onClick={() => exportZonesCSV(zones, labelFn)}
-          className="text-xs bg-emerald-600 text-white px-2 py-1 rounded hover:bg-emerald-700"
+          className="text-xs bg-emerald-600 text-white px-2 py-1 rounded hover:bg-emerald-700 cursor-pointer"
           title="권역 결과를 CSV로 내보내기"
         >
           ⬇ CSV
+        </button>
+      </div>
+
+      {/* 권역 확정 제어 배너 */}
+      <div
+        className={`p-2.5 rounded-lg border transition shadow-sm ${
+          isZoneConfirmed
+            ? "bg-emerald-50 border-emerald-300 text-emerald-950"
+            : "bg-slate-50 border-slate-300 text-slate-800"
+        }`}
+      >
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="font-bold flex items-center gap-1.5 text-xs">
+            <span>{isZoneConfirmed ? "🔒" : "✏️"}</span>
+            <span>{isZoneConfirmed ? "권역 확정 완료" : "권역 배정 시뮬레이션 중"}</span>
+          </div>
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/70 border border-gray-200">
+            {totalAssigned} / {totalDongCount}동 (
+            {totalDongCount > 0
+              ? Math.round((totalAssigned / totalDongCount) * 100)
+              : 0}
+            %)
+          </span>
+        </div>
+        <p className="text-[11px] text-gray-600 mb-2 leading-relaxed">
+          {isZoneConfirmed
+            ? "지도에 1~" +
+              zoneCount +
+              " 권역 통합 라벨이 표시 중입니다. 지도의 권역 라벨을 클릭하거나 아래 목록에서 권역을 선택할 수 있습니다."
+            : "배정 완료 후 '권역 확정'을 누르면 지도에 권역별 통합 라벨링(1~" +
+              zoneCount +
+              "권역)이 크게 표시됩니다."}
+        </p>
+        <button
+          onClick={toggleZoneConfirmed}
+          className={`w-full py-1.5 px-3 rounded font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer ${
+            isZoneConfirmed
+              ? "bg-slate-700 hover:bg-slate-800 text-white"
+              : "bg-emerald-600 hover:bg-emerald-700 text-white"
+          }`}
+        >
+          {isZoneConfirmed
+            ? "🔓 권역 확정 해제 (수정 모드)"
+            : "🔒 현재 배정안 권역 확정 (지도 라벨 표시)"}
         </button>
       </div>
 
@@ -207,21 +256,45 @@ export default function ZonePanel({ geoData }) {
         const adj = adjIssues[z.zone] || { isolatedDongs: [], components: 0 };
         const dt = downtownWarnings[z.zone] || { count: 0, isWarning: false };
         const score = getZoneScore(z);
+        const isCurrentSelected = selectedZone === z.zone;
         return (
           <div
             key={z.zone}
-            className="border rounded p-2 bg-white"
+            onClick={() => setSelectedZone(z.zone)}
+            className={`border rounded p-2 bg-white transition cursor-pointer ${
+              isCurrentSelected
+                ? "ring-2 ring-blue-500 shadow-md bg-blue-50/20"
+                : "hover:border-gray-400"
+            }`}
             style={{
               borderLeftColor: ZONE_COLORS[(z.zone - 1) % ZONE_COLORS.length],
-              borderLeftWidth: 4,
+              borderLeftWidth: 5,
             }}
           >
             <div className="flex justify-between items-center mb-1">
-              <div className="font-bold">
-                권역 {z.zone}
-                <span className="ml-2 text-xs text-gray-600">{labelFn(z)}</span>
+              <div className="font-bold flex items-center gap-1.5">
+                <span>권역 {z.zone}</span>
+                <span className="text-xs text-gray-600 font-normal">{labelFn(z)}</span>
+                {isCurrentSelected && (
+                  <span className="text-[9px] bg-blue-100 text-blue-800 px-1 py-0.5 rounded font-bold">
+                    선택
+                  </span>
+                )}
               </div>
-              {statusBadge(score)}
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedZone(z.zone);
+                    setFocusedZone(z.zone);
+                  }}
+                  className="text-[10px] px-1.5 py-0.5 bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-800 rounded border border-gray-300 font-medium cursor-pointer"
+                  title="지도에서 이 권역으로 이동"
+                >
+                  🔍 지도
+                </button>
+                {statusBadge(score)}
+              </div>
             </div>
             <div className="text-xs space-y-0.5">
               <div>

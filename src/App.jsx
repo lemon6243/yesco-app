@@ -11,15 +11,21 @@ const FIRST_VISIT_KEY = "yesco_help_seen_v1";
 
 export default function App() {
   const [geoData, setGeoData] = useState(null);
-  const [showHelp, setShowHelp] = useState(false);
+  const [showHelp, setShowHelp] = useState(() => {
+    try {
+      if (!localStorage.getItem(FIRST_VISIT_KEY)) {
+        localStorage.setItem(FIRST_VISIT_KEY, "1");
+        return true;
+      }
+    } catch {
+      // ignore storage access errors
+    }
+    return false;
+  });
   const appMode = useAppStore((s) => s.appMode);
   const setAppMode = useAppStore((s) => s.setAppMode);
 
   useEffect(() => {
-    if (!localStorage.getItem(FIRST_VISIT_KEY)) {
-      setShowHelp(true);
-      localStorage.setItem(FIRST_VISIT_KEY, "1");
-    }
     const onKey = (e) => {
       if (e.key === "F1") {
         e.preventDefault();
