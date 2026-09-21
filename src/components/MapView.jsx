@@ -114,6 +114,7 @@ export default function MapView({ onDataLoaded }) {
     const commonOpts = {
       moveInData,
       selectedMoveInYears,
+      geoData,
     };
     if (isV2) {
       if (!metersByGrade) return null;

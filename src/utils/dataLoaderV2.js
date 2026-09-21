@@ -45,12 +45,28 @@ export function useV2Data() {
       fetch("/data/centers_unit_times.json")
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null),
+      // 단독/공동/영업 세대수 데이터 (dongs_unified.csv)
+      fetch("/data/dongs_unified.csv")
+        .then((r) => (r.ok ? r.text() : null))
+        .catch(() => null),
     ])
-      .then(([csvText, splitJson, weightsJson, moveInCsv, unitTimesJson]) => {
+      .then(([csvText, splitJson, weightsJson, moveInCsv, unitTimesJson, unifiedCsv]) => {
         if (cancelled) return;
 
         // 1) 등급별 데이터
         const parsed = parseGradeCsv(csvText);
+
+        // 1-1) dongs_unified.csv 에서 단독, 공동, 영업 세대수 매핑
+        if (unifiedCsv) {
+          const unifiedMap = parseUnifiedCsv(unifiedCsv);
+          Object.entries(unifiedMap).forEach(([dong, h]) => {
+            if (parsed[dong]) {
+              parsed[dong].단독 = h.단독;
+              parsed[dong].공동 = h.공동;
+              parsed[dong].영업 = h.영업;
+            }
+          });
+        }
         setMetersByGrade(parsed);
 
         // 2) 분할동
@@ -251,4 +267,34 @@ function parseCsvLine(line) {
   }
   result.push(cur);
   return result;
+}
+
+/**
+ * dongs_unified.csv 파싱: 행정동별 단독, 공동, 영업 세대수 맵 생성
+ */
+function parseUnifiedCsv(csvText) {
+  if (!csvText) return {};
+  const text = csvText.replace(/^\uFEFF/, "");
+  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+  if (lines.length < 2) return {};
+  const header = parseCsvLine(lines[0]);
+  const idxDong = header.indexOf("행정동");
+  const idxDan = header.indexOf("단독");
+  const idxGong = header.indexOf("공동");
+  const idxYeong = header.indexOf("영업");
+  const idxTotal = header.indexOf("합계");
+
+  const map = {};
+  for (let r = 1; r < lines.length; r++) {
+    const cells = parseCsvLine(lines[r]);
+    const dong = cells[idxDong]?.trim();
+    if (!dong) continue;
+    map[dong] = {
+      단독: parseFloat(cells[idxDan]) || 0,
+      공동: parseFloat(cells[idxGong]) || 0,
+      영업: parseFloat(cells[idxYeong]) || 0,
+      합계: parseFloat(cells[idxTotal]) || 0,
+    };
+  }
+  return map;
 }

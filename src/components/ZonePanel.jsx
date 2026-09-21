@@ -328,6 +328,13 @@ export default function ZonePanel({ geoData }) {
                       </span>
                     )}
                   </div>
+                  {(z.단독 > 0 || z.공동 > 0 || z.영업 > 0) && (
+                    <div className="text-gray-600">
+                      단독: {(z.단독 ?? 0).toLocaleString()} / 공동:{" "}
+                      {(z.공동 ?? 0).toLocaleString()} / 영업:{" "}
+                      {(z.영업 ?? 0).toLocaleString()}
+                    </div>
+                  )}
                   <div className="font-bold text-amber-800">
                     난이도점수: {z.난이도점수.toLocaleString()}
                   </div>
@@ -374,7 +381,7 @@ export default function ZonePanel({ geoData }) {
                       )}
                     </span>
                     <span className="text-[10px] font-normal text-sky-600">
-                      영업 3천 · 사무 2.4만 기준
+                      단독 3천 · 공동 4천 · 영업 3천 · 사무 2.4만 기준
                     </span>
                   </div>
                   <div className="text-[11px] text-sky-800 flex flex-wrap gap-x-2">
@@ -384,12 +391,13 @@ export default function ZonePanel({ geoData }) {
                       총 {(z.법적인원 ?? 0) + (z.사무행정인원 ?? 0)}명
                     </span>
                   </div>
-                  {!isV2 && (z.법적단독 > 0 || z.법적공동 > 0 || z.법적영업 > 0) && (
-                    <div className="text-[10px] text-sky-700">
-                      단독 {z.법적단독}명 (3천) / 공동 {z.법적공동}명 (4천) / 영업{" "}
-                      {z.법적영업}명 (3천)
-                    </div>
-                  )}
+                  {(!isV2 || staffingMode === "simple") &&
+                    (z.법적단독 > 0 || z.법적공동 > 0 || z.법적영업 > 0) && (
+                      <div className="text-[10px] text-sky-700">
+                        단독 {z.법적단독}명 (3천) / 공동 {z.법적공동}명 (4천) / 영업{" "}
+                        {z.법적영업}명 (3천)
+                      </div>
+                    )}
                   {isV2 && staffingMode === "precise" && z.작업시간합계 > 0 && (
                     <div className="text-[10px] text-sky-700">
                       연간 작업시간: {Math.round(z.작업시간합계 / 60).toLocaleString()}시간

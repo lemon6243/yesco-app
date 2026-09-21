@@ -412,7 +412,7 @@ export default function ControlPanel({ geoData }) {
             </div>
             <div className="text-[10px] text-gray-600">
               {staffingMode === "simple"
-                ? "공동 4000/영업 3000세대당 1명"
+                ? "단독 3000 / 공동 4000 / 영업 3000세대당 1명"
                 : "센터별 단위시간 × 연간 작업량 / 1인 가용시간"}
             </div>
           </div>
