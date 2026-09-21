@@ -357,18 +357,25 @@ export default function ZonePanel({ geoData }) {
                 </>
               )}
 
-              <div>상담원수: {z.상담원수.toFixed(2)}명</div>
+              <div className="text-gray-600">
+                사무행정(분산형 콜센터): <span className="font-semibold text-gray-800">{z.상담원수.toFixed(2)}명</span>
+              </div>
 
               {/* 법적인원 표시 (V1/V2 공통) */}
               {showStaffing && (z.법적인원 > 0 || z.사무행정인원 > 0) && (
                 <div className="mt-1 pt-1 border-t border-sky-100 bg-sky-50 -mx-2 px-2 pb-1">
-                  <div className="text-sky-900 font-semibold text-[11px]">
-                    👷 인원 산출
-                    {isV2 && (
-                      <span className="ml-1 text-[10px] font-normal text-sky-600">
-                        ({staffingMode === "precise" ? "정밀" : "간이"})
-                      </span>
-                    )}
+                  <div className="text-sky-900 font-semibold text-[11px] flex justify-between">
+                    <span>
+                      👷 인원 산출
+                      {isV2 && (
+                        <span className="ml-1 text-[10px] font-normal text-sky-600">
+                          ({staffingMode === "precise" ? "정밀" : "간이"})
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-[10px] font-normal text-sky-600">
+                      영업 3천 · 사무 2.4만 기준
+                    </span>
                   </div>
                   <div className="text-[11px] text-sky-800 flex flex-wrap gap-x-2">
                     <span>법적점검원: <b>{z.법적인원 ?? 0}명</b></span>
@@ -379,8 +386,8 @@ export default function ZonePanel({ geoData }) {
                   </div>
                   {!isV2 && (z.법적단독 > 0 || z.법적공동 > 0 || z.법적영업 > 0) && (
                     <div className="text-[10px] text-sky-700">
-                      단독 {z.법적단독}명 / 공동 {z.법적공동}명 / 영업{" "}
-                      {z.법적영업}명
+                      단독 {z.법적단독}명 (3천) / 공동 {z.법적공동}명 (4천) / 영업{" "}
+                      {z.법적영업}명 (3천)
                     </div>
                   )}
                   {isV2 && staffingMode === "precise" && z.작업시간합계 > 0 && (

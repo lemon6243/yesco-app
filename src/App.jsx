@@ -73,13 +73,15 @@ export default function App() {
           </button>
         </div>
 
-        <button
-          onClick={() => setShowHelp(true)}
-          className="text-sm text-gray-600 hover:text-gray-900 px-3 py-1 border rounded"
-          title="F1"
-        >
-          ❓ 도움말
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowHelp(true)}
+            className="text-sm text-gray-600 hover:text-gray-900 px-3 py-1 border rounded cursor-pointer transition hover:bg-gray-50 flex items-center gap-1"
+            title="F1"
+          >
+            <span>❓ 도움말</span>
+          </button>
+        </div>
       </header>
 
       {/* 본문 */}
@@ -98,7 +100,9 @@ export default function App() {
         </aside>
       </div>
 
-      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+      {showHelp && (
+        <HelpModal open={showHelp} onClose={() => setShowHelp(false)} />
+      )}
     </div>
   );
 }
